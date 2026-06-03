@@ -1,1 +1,605 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador Pro - Café Código</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Animaciones para las notificaciones y transiciones de vistas */
+        .toast-enter { opacity: 0; transform: translateX(100%); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .toast-enter-active { opacity: 1; transform: translateX(0); }
+        
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* Estilo para barra de progreso en dashboard */
+        .progress-bar { transition: width 1s ease-out; }
+        
+        /* Ocultar scrollbar para un look más limpio pero permitir scroll */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 h-screen overflow-hidden flex">
+
+    <!-- Navegación Lateral (Sidebar) -->
+    <aside class="w-20 md:w-64 bg-slate-900 text-slate-300 flex flex-col transition-all duration-300 flex-shrink-0 z-20">
+        <div class="h-16 flex items-center justify-center md:justify-start md:px-6 bg-slate-950 border-b border-slate-800">
+            <span class="text-2xl">☕</span>
+            <span class="text-white font-bold text-lg ml-3 hidden md:block">Café Código</span>
+        </div>
+        
+        <nav class="flex-1 py-6 flex flex-col gap-2 px-3">
+            <button onclick="cambiarVista('pos')" id="nav-pos" class="nav-btn flex items-center p-3 rounded-lg hover:bg-slate-800 hover:text-white transition-colors bg-slate-800 text-white">
+                <span class="text-xl md:mr-3 text-center w-6">🛒</span>
+                <span class="hidden md:block font-medium">Punto de Venta</span>
+            </button>
+            <button onclick="cambiarVista('dashboard')" id="nav-dashboard" class="nav-btn flex items-center p-3 rounded-lg hover:bg-slate-800 hover:text-white transition-colors">
+                <span class="text-xl md:mr-3 text-center w-6">📊</span>
+                <span class="hidden md:block font-medium">Dashboard</span>
+            </button>
+            <button onclick="cambiarVista('inventory')" id="nav-inventory" class="nav-btn flex items-center p-3 rounded-lg hover:bg-slate-800 hover:text-white transition-colors">
+                <span class="text-xl md:mr-3 text-center w-6">📦</span>
+                <span class="hidden md:block font-medium">Inventario</span>
+            </button>
+        </nav>
+        
+        <div class="p-4 border-t border-slate-800 text-center md:text-left">
+            <p class="text-xs text-slate-500 hidden md:block mb-1">Cajero Activo</p>
+            <div class="flex items-center justify-center md:justify-start gap-2">
+                <div class="w-8 h-8 rounded-full bg-amber-600 flex items-center justify-center text-white font-bold text-sm">AD</div>
+                <span class="text-sm font-medium text-white hidden md:block">Admin</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Contenedor Principal (Donde cambian las vistas) -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden relative w-full">
+        
+        <!-- Header Global superior -->
+        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10 flex-shrink-0">
+            <h2 id="view-title" class="text-xl font-semibold text-slate-700">Punto de Venta</h2>
+            
+            <div class="flex items-center gap-4">
+                <div class="flex flex-col items-end">
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Caja General</span>
+                    <span id="header-caja" class="text-lg font-bold text-emerald-600">$0.00</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- VISTA 1: PUNTO DE VENTA (POS) -->
+        <section id="view-pos" class="flex-1 overflow-hidden flex flex-col md:flex-row p-4 gap-4 view-section fade-in">
+            <!-- Menú de Productos -->
+            <div class="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden h-full">
+                <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                    <h3 class="font-semibold text-slate-700">Menú</h3>
+                    <div class="flex gap-2">
+                        <span class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-md">Bebidas</span>
+                        <span class="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-700 rounded-md">Postres</span>
+                    </div>
+                </div>
+                <div class="flex-1 overflow-y-auto p-4">
+                    <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="pos-grid">
+                        <!-- Botones generados por JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ticket / Carrito -->
+            <div class="w-full md:w-80 lg:w-96 flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden h-[50vh] md:h-full flex-shrink-0">
+                <div class="p-4 border-b border-slate-100 bg-slate-50">
+                    <h3 class="font-semibold text-slate-700 flex items-center justify-between">
+                        <span>Orden Actual</span>
+                        <span id="cart-count" class="bg-amber-100 text-amber-800 text-xs py-1 px-2 rounded-full font-bold">0 items</span>
+                    </h3>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto p-3 flex flex-col gap-2" id="cart-items">
+                    <!-- Items del carrito -->
+                    <div class="h-full flex flex-col items-center justify-center text-slate-400 opacity-70">
+                        <span class="text-4xl mb-2">🍽️</span>
+                        <p class="text-sm">Orden vacía</p>
+                    </div>
+                </div>
+
+                <div class="p-4 border-t border-slate-100 bg-slate-50">
+                    <div class="flex justify-between text-sm mb-1 text-slate-500">
+                        <span>Subtotal:</span>
+                        <span id="cart-subtotal">$0.00</span>
+                    </div>
+                    <div class="flex justify-between text-sm mb-3 text-slate-500">
+                        <span>IVA (16%):</span>
+                        <span id="cart-tax">$0.00</span>
+                    </div>
+                    <div class="flex justify-between text-lg font-bold mb-4 text-slate-800">
+                        <span>Total:</span>
+                        <span id="cart-total" class="text-emerald-600">$0.00</span>
+                    </div>
+                    
+                    <button onclick="procesarPago()" id="btn-pay" disabled class="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold py-3 rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2">
+                        <span>💸</span> Cobrar
+                    </button>
+                    <button onclick="limpiarCarrito()" id="btn-cancel" disabled class="w-full mt-2 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg disabled:opacity-50 disabled:hover:bg-transparent transition-colors">
+                        Cancelar Orden
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- VISTA 2: DASHBOARD -->
+        <section id="view-dashboard" class="flex-1 overflow-y-auto p-4 md:p-6 hidden view-section fade-in">
+            <!-- Tarjetas de Resumen (KPIs) -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-center">
+                    <div class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 text-2xl mr-4">💰</div>
+                    <div>
+                        <p class="text-sm text-slate-500 font-medium">Ingresos Totales</p>
+                        <p id="dash-ingresos" class="text-2xl font-bold text-slate-800">$0.00</p>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-center">
+                    <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-2xl mr-4">🧾</div>
+                    <div>
+                        <p class="text-sm text-slate-500 font-medium">Órdenes Realizadas</p>
+                        <p id="dash-ordenes" class="text-2xl font-bold text-slate-800">0</p>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex items-center">
+                    <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-2xl mr-4">📈</div>
+                    <div>
+                        <p class="text-sm text-slate-500 font-medium">Ticket Promedio</p>
+                        <p id="dash-promedio" class="text-2xl font-bold text-slate-800">$0.00</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gráficos y Tablas -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <!-- Top Productos (Gráfico de barras CSS) -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                    <h3 class="font-semibold text-slate-700 mb-4 flex items-center gap-2">⭐ Productos Más Vendidos</h3>
+                    <div id="dash-top-products" class="flex flex-col gap-4">
+                        <!-- Generado por JS -->
+                        <div class="text-center text-slate-400 py-4 text-sm">No hay datos de ventas aún.</div>
+                    </div>
+                </div>
+
+                <!-- Historial de Transacciones -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col h-[400px]">
+                    <h3 class="font-semibold text-slate-700 mb-4 flex items-center gap-2">⏱️ Últimas Transacciones</h3>
+                    <div class="flex-1 overflow-y-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0">
+                                <tr>
+                                    <th class="px-4 py-2 rounded-tl-md">ID Venta</th>
+                                    <th class="px-4 py-2">Artículos</th>
+                                    <th class="px-4 py-2 text-right rounded-tr-md">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dash-history" class="divide-y divide-slate-100">
+                                <!-- Generado por JS -->
+                                <tr><td colspan="3" class="text-center py-8 text-slate-400">Sin transacciones recientes.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- VISTA 3: INVENTARIO -->
+        <section id="view-inventory" class="flex-1 overflow-y-auto p-4 md:p-6 hidden view-section fade-in">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                    <h3 class="font-semibold text-slate-700">Control de Existencias</h3>
+                    <button onclick="surtirTodo()" class="bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 px-4 rounded-lg shadow-sm transition-colors">
+                        🔄 Surtir +10 a todos
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-slate-600">
+                        <thead class="text-xs text-slate-500 uppercase bg-slate-100">
+                            <tr>
+                                <th class="px-6 py-3">Producto</th>
+                                <th class="px-6 py-3">Categoría</th>
+                                <th class="px-6 py-3 text-right">Precio Base</th>
+                                <th class="px-6 py-3 text-center">Stock Actual</th>
+                                <th class="px-6 py-3 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventory-table" class="divide-y divide-slate-200">
+                            <!-- Generado por JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Contenedor para Notificaciones -->
+    <div id="toast-container" class="fixed top-4 right-4 flex flex-col gap-2 z-50 pointer-events-none"></div>
+
+    <script>
+        // --- 1. BASE DE DATOS Y ESTADO GLOBAL ---
+        const estado = {
+            vistaActual: 'pos',
+            caja: 0,
+            ordenActual: [],
+            impuestoIVA: 0.16, // 16% de IVA
+            historialVentas: [], // Para guardar cada ticket
+            
+            // Inventario expandido
+            productos: [
+                { id: 1, nombre: "Café Americano", categoria: "Bebida", precio: 2.50, emoji: "☕", color: "bg-amber-100 text-amber-800 border-amber-200", stock: 50, ventasHistoricas: 0 },
+                { id: 2, nombre: "Capuchino", categoria: "Bebida", precio: 3.50, emoji: "☕", color: "bg-amber-100 text-amber-800 border-amber-200", stock: 30, ventasHistoricas: 0 },
+                { id: 3, nombre: "Latte Helado", categoria: "Bebida", precio: 4.50, emoji: "🧊", color: "bg-cyan-100 text-cyan-800 border-cyan-200", stock: 25, ventasHistoricas: 0 },
+                { id: 4, nombre: "Matcha Latte", categoria: "Bebida", precio: 5.00, emoji: "🍵", color: "bg-green-100 text-green-800 border-green-200", stock: 20, ventasHistoricas: 0 },
+                { id: 5, nombre: "Croissant Mantequilla", categoria: "Postre", precio: 2.80, emoji: "🥐", color: "bg-orange-100 text-orange-800 border-orange-200", stock: 15, ventasHistoricas: 0 },
+                { id: 6, nombre: "Cheesecake", categoria: "Postre", precio: 4.50, emoji: "🍰", color: "bg-red-100 text-red-800 border-red-200", stock: 10, ventasHistoricas: 0 },
+                { id: 7, nombre: "Galleta Choco", categoria: "Postre", precio: 1.50, emoji: "🍪", color: "bg-yellow-100 text-yellow-800 border-yellow-200", stock: 40, ventasHistoricas: 0 },
+                { id: 8, nombre: "Muffin Arándanos", categoria: "Postre", precio: 3.00, emoji: "🧁", color: "bg-purple-100 text-purple-800 border-purple-200", stock: 12, ventasHistoricas: 0 }
+            ]
+        };
+
+        // --- 2. NAVEGACIÓN ENTRE VISTAS ---
+        function cambiarVista(vista) {
+            estado.vistaActual = vista;
+            
+            // Ocultar todas las secciones
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            
+            // Mostrar la seleccionada
+            document.getElementById(`view-${vista}`).classList.remove('hidden');
+            
+            // Actualizar diseño de botones en sidebar
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-slate-800', 'text-white');
+                btn.classList.add('text-slate-300');
+            });
+            const activeBtn = document.getElementById(`nav-${vista}`);
+            activeBtn.classList.add('bg-slate-800', 'text-white');
+            activeBtn.classList.remove('text-slate-300');
+
+            // Actualizar Título
+            const titulos = { pos: "Punto de Venta", dashboard: "Panel de Control", inventory: "Gestión de Inventario" };
+            document.getElementById('view-title').innerText = titulos[vista];
+
+            // Renderizar datos específicos de la vista al entrar
+            if (vista === 'pos') renderizarMenuPOS();
+            if (vista === 'dashboard') renderizarDashboard();
+            if (vista === 'inventory') renderizarInventario();
+        }
+
+        // --- STREAMING_CHUNK:Lógica del Módulo Punto de Venta (POS)... ---
+        function renderizarMenuPOS() {
+            const grid = document.getElementById('pos-grid');
+            grid.innerHTML = '';
+
+            estado.productos.forEach(prod => {
+                const agotado = prod.stock === 0;
+                const btn = document.createElement('button');
+                btn.disabled = agotado;
+                
+                // Clases dinámicas dependiendo de si hay stock
+                let clases = `relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all text-left w-full h-32 `;
+                if (agotado) {
+                    clases += `bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed grayscale opacity-60`;
+                } else {
+                    clases += `${prod.color} hover:shadow-md hover:-translate-y-1 active:scale-95 cursor-pointer`;
+                }
+                
+                btn.className = clases;
+                btn.onclick = () => agregarAlCarrito(prod.id);
+
+                btn.innerHTML = `
+                    <span class="text-4xl mb-1">${prod.emoji}</span>
+                    <span class="font-bold text-sm leading-tight text-center">${prod.nombre}</span>
+                    <span class="mt-auto font-semibold text-sm opacity-90">$${prod.precio.toFixed(2)}</span>
+                    ${agotado ? `<div class="absolute inset-0 bg-white/50 rounded-xl flex items-center justify-center backdrop-blur-[1px]"><span class="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">AGOTADO</span></div>` 
+                              : `<span class="absolute top-2 right-2 text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/60 shadow-sm">${prod.stock}</span>`}
+                `;
+                grid.appendChild(btn);
+            });
+        }
+
+        function agregarAlCarrito(idProducto) {
+            const productoDb = estado.productos.find(p => p.id === idProducto);
+            const itemEnCarrito = estado.ordenActual.find(i => i.id === idProducto);
+            
+            // Validar stock disponible
+            const cantActual = itemEnCarrito ? itemEnCarrito.cantidad : 0;
+            if (cantActual >= productoDb.stock) {
+                mostrarNotificacion(`Sin stock suficiente de ${productoDb.nombre}`, 'error');
+                return;
+            }
+
+            if (itemEnCarrito) {
+                itemEnCarrito.cantidad++;
+            } else {
+                estado.ordenActual.push({
+                    id: productoDb.id,
+                    nombre: productoDb.nombre,
+                    precio: productoDb.precio,
+                    emoji: productoDb.emoji,
+                    cantidad: 1
+                });
+            }
+            actualizarCarritoDOM();
+        }
+
+        function restarDelCarrito(idProducto) {
+            const index = estado.ordenActual.findIndex(i => i.id === idProducto);
+            if (index > -1) {
+                if (estado.ordenActual[index].cantidad > 1) {
+                    estado.ordenActual[index].cantidad--;
+                } else {
+                    estado.ordenActual.splice(index, 1);
+                }
+                actualizarCarritoDOM();
+            }
+        }
+
+        function actualizarCarritoDOM() {
+            const container = document.getElementById('cart-items');
+            container.innerHTML = '';
+            
+            let subtotal = 0;
+            let totalItems = 0;
+
+            if (estado.ordenActual.length === 0) {
+                container.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-slate-400 opacity-70"><span class="text-4xl mb-2">🍽️</span><p class="text-sm">Orden vacía</p></div>`;
+                document.getElementById('btn-pay').disabled = true;
+                document.getElementById('btn-cancel').disabled = true;
+            } else {
+                document.getElementById('btn-pay').disabled = false;
+                document.getElementById('btn-cancel').disabled = false;
+
+                estado.ordenActual.forEach(item => {
+                    subtotal += item.precio * item.cantidad;
+                    totalItems += item.cantidad;
+                    
+                    const div = document.createElement('div');
+                    div.className = "flex justify-between items-center bg-white border border-slate-100 rounded-lg p-2 shadow-sm text-sm";
+                    div.innerHTML = `
+                        <div class="flex items-center gap-2 overflow-hidden">
+                            <span class="text-lg">${item.emoji}</span>
+                            <div class="truncate">
+                                <p class="font-semibold truncate">${item.nombre}</p>
+                                <p class="text-xs text-slate-500">$${item.precio.toFixed(2)}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <button onclick="restarDelCarrito(${item.id})" class="w-6 h-6 flex items-center justify-center rounded bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold">-</button>
+                            <span class="w-4 text-center font-bold">${item.cantidad}</span>
+                            <button onclick="agregarAlCarrito(${item.id})" class="w-6 h-6 flex items-center justify-center rounded bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold">+</button>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+
+            // Cálculos Financieros
+            const iva = subtotal * estado.impuestoIVA;
+            const total = subtotal + iva;
+
+            // Actualizar textos
+            document.getElementById('cart-count').innerText = `${totalItems} items`;
+            document.getElementById('cart-subtotal').innerText = `$${subtotal.toFixed(2)}`;
+            document.getElementById('cart-tax').innerText = `$${iva.toFixed(2)}`;
+            document.getElementById('cart-total').innerText = `$${total.toFixed(2)}`;
+            
+            // Guardar el total en el estado para usarlo al cobrar
+            estado.totalActual = total; 
+        }
+
+        function limpiarCarrito() {
+            estado.ordenActual = [];
+            actualizarCarritoDOM();
+        }
+
+        function procesarPago() {
+            if (estado.ordenActual.length === 0) return;
+
+            // 1. Deducir inventario y sumar ventas históricas
+            estado.ordenActual.forEach(itemCarrito => {
+                const prodDb = estado.productos.find(p => p.id === itemCarrito.id);
+                if (prodDb) {
+                    prodDb.stock -= itemCarrito.cantidad;
+                    prodDb.ventasHistoricas += itemCarrito.cantidad;
+                }
+            });
+
+            // 2. Registrar la venta en el historial
+            const numArticulos = estado.ordenActual.reduce((acc, curr) => acc + curr.cantidad, 0);
+            const idVenta = "TKT-" + Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+            
+            estado.historialVentas.unshift({ // Añade al inicio
+                id: idVenta,
+                fecha: new Date(),
+                articulos: numArticulos,
+                total: estado.totalActual,
+                detalle: [...estado.ordenActual] // copia del array
+            });
+
+            // 3. Actualizar Caja General
+            estado.caja += estado.totalActual;
+            document.getElementById('header-caja').innerText = `$${estado.caja.toFixed(2)}`;
+
+            // 4. Limpiar y notificar
+            mostrarNotificacion(`Cobro exitoso: $${estado.totalActual.toFixed(2)}`, 'success');
+            limpiarCarrito();
+            
+            // Re-renderizar menú por si algo se agotó
+            renderizarMenuPOS(); 
+        }
+
+        // --- STREAMING_CHUNK:Lógica del Módulo Dashboard y Estadísticas... ---
+        function renderizarDashboard() {
+            // 1. Tarjetas Superiores
+            const totalVentas = estado.historialVentas.length;
+            document.getElementById('dash-ingresos').innerText = `$${estado.caja.toFixed(2)}`;
+            document.getElementById('dash-ordenes').innerText = totalVentas;
+            
+            const promedio = totalVentas > 0 ? (estado.caja / totalVentas) : 0;
+            document.getElementById('dash-promedio').innerText = `$${promedio.toFixed(2)}`;
+
+            // 2. Gráfico "Top Productos"
+            const topContenedor = document.getElementById('dash-top-products');
+            topContenedor.innerHTML = '';
+            
+            // Clonar y ordenar por ventas (mayor a menor)
+            const productosOrdenados = [...estado.productos]
+                .filter(p => p.ventasHistoricas > 0)
+                .sort((a, b) => b.ventasHistoricas - a.ventasHistoricas)
+                .slice(0, 5); // Tomar el top 5
+
+            if (productosOrdenados.length === 0) {
+                topContenedor.innerHTML = '<div class="text-center text-slate-400 py-4 text-sm">No hay ventas registradas aún.</div>';
+            } else {
+                const maxVentas = productosOrdenados[0].ventasHistoricas; // Para calcular porcentajes
+                
+                productosOrdenados.forEach(prod => {
+                    const porcentaje = (prod.ventasHistoricas / maxVentas) * 100;
+                    const div = document.createElement('div');
+                    div.innerHTML = `
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="font-medium text-slate-700">${prod.emoji} ${prod.nombre}</span>
+                            <span class="text-slate-500">${prod.ventasHistoricas} uds</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2">
+                            <div class="bg-blue-500 h-2 rounded-full progress-bar" style="width: 0%"></div>
+                        </div>
+                    `;
+                    topContenedor.appendChild(div);
+                    
+                    // Animación de la barra
+                    setTimeout(() => {
+                        div.querySelector('.progress-bar').style.width = `${porcentaje}%`;
+                    }, 50);
+                });
+            }
+
+            // 3. Tabla de Últimas Transacciones
+            const historyTable = document.getElementById('dash-history');
+            historyTable.innerHTML = '';
+            
+            if (estado.historialVentas.length === 0) {
+                historyTable.innerHTML = '<tr><td colspan="3" class="text-center py-8 text-slate-400">Sin transacciones recientes.</td></tr>';
+            } else {
+                // Mostrar solo las últimas 10
+                estado.historialVentas.slice(0, 10).forEach(venta => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50 border-b border-slate-100 last:border-0";
+                    
+                    // Formatear hora
+                    const hora = venta.fecha.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+                    tr.innerHTML = `
+                        <td class="px-4 py-3 font-medium text-blue-600">
+                            ${venta.id}
+                            <div class="text-[10px] text-slate-400 font-normal">${hora}</div>
+                        </td>
+                        <td class="px-4 py-3 text-slate-600">${venta.articulos} items</td>
+                        <td class="px-4 py-3 text-right font-bold text-emerald-600">$${venta.total.toFixed(2)}</td>
+                    `;
+                    historyTable.appendChild(tr);
+                });
+            }
+        }
+
+        // --- STREAMING_CHUNK:Lógica del Módulo Inventario... ---
+        function renderizarInventario() {
+            const tbody = document.getElementById('inventory-table');
+            tbody.innerHTML = '';
+
+            estado.productos.forEach(prod => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors";
+                
+                // Color para alertar stock bajo
+                let stockClass = "text-slate-700 font-semibold";
+                if (prod.stock <= 5) stockClass = "text-red-600 font-bold";
+                else if (prod.stock <= 15) stockClass = "text-amber-500 font-semibold";
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 flex items-center gap-2">
+                        <span class="text-xl">${prod.emoji}</span>
+                        <span class="font-medium text-slate-800">${prod.nombre}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                            ${prod.categoria}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-right text-slate-500">$${prod.precio.toFixed(2)}</td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="${stockClass}">${prod.stock}</span>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <button onclick="surtirProducto(${prod.id}, 10)" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-medium py-1.5 px-3 rounded transition-colors border border-indigo-200">
+                            +10 Stock
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function surtirProducto(id, cantidad) {
+            const prod = estado.productos.find(p => p.id === id);
+            if(prod) {
+                prod.stock += cantidad;
+                mostrarNotificacion(`Inventario de ${prod.nombre} actualizado`, 'info');
+                renderizarInventario(); // Refrescar vista
+            }
+        }
+
+        function surtirTodo() {
+            estado.productos.forEach(p => p.stock += 10);
+            mostrarNotificacion('Todos los productos han recibido +10', 'success');
+            renderizarInventario();
+        }
+
+        // --- STREAMING_CHUNK:Utilidades y Arranque... ---
+        function mostrarNotificacion(mensaje, tipo = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            // Estilos según el tipo
+            let bgClass = tipo === 'success' ? 'bg-emerald-600' : (tipo === 'error' ? 'bg-red-500' : 'bg-blue-500');
+            let icon = tipo === 'success' ? '✅' : (tipo === 'error' ? '⚠️' : 'ℹ️');
+
+            toast.className = `${bgClass} text-white px-4 py-3 rounded-lg shadow-lg font-medium flex items-center gap-3 toast-enter pointer-events-auto`;
+            toast.innerHTML = `<span>${icon}</span> <p class="text-sm">${mensaje}</p>`;
+            
+            container.appendChild(toast);
+            
+            // Animar entrada
+            requestAnimationFrame(() => {
+                toast.classList.add('toast-enter-active');
+            });
+            
+            // Remover después de 3s
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
+        }
+
+        // Inicializar aplicación al cargar
+        window.onload = () => {
+            cambiarVista('pos'); // Cargar la vista principal por defecto
+        };
+    </script>
+</body>
+</html>
