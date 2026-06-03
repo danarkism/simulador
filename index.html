@@ -50,8 +50,14 @@
             <button onclick="cambiarVista('inventory')" id="nav-inventory" class="nav-btn flex items-center p-3 rounded-lg hover:bg-slate-800 hover:text-white transition-colors">
                 <span class="text-xl md:mr-3 text-center w-6">📦</span><span class="hidden md:block font-medium">Inventario</span>
             </button>
+            <button onclick="cambiarVista('suppliers')" id="nav-suppliers" class="nav-btn flex items-center p-3 rounded-lg hover:bg-slate-800 hover:text-white transition-colors">
+                <span class="text-xl md:mr-3 text-center w-6">🚚</span><span class="hidden md:block font-medium">Proveedores</span>
+            </button>
             <button onclick="cambiarVista('customers')" id="nav-customers" class="nav-btn flex items-center p-3 rounded-lg hover:bg-slate-800 hover:text-white transition-colors">
                 <span class="text-xl md:mr-3 text-center w-6">👥</span><span class="hidden md:block font-medium">Clientes</span>
+            </button>
+            <button onclick="cambiarVista('reservations')" id="nav-reservations" class="nav-btn flex items-center p-3 rounded-lg hover:bg-slate-800 hover:text-white transition-colors">
+                <span class="text-xl md:mr-3 text-center w-6">📅</span><span class="hidden md:block font-medium">Reservas</span>
             </button>
             <button onclick="cambiarVista('hr')" id="nav-hr" class="nav-btn flex items-center p-3 rounded-lg hover:bg-slate-800 hover:text-white transition-colors">
                 <span class="text-xl md:mr-3 text-center w-6">🧑‍🍳</span><span class="hidden md:block font-medium">Personal (RRHH)</span>
@@ -65,11 +71,12 @@
         </nav>
         
         <div class="p-4 border-t border-slate-800 text-center md:text-left bg-slate-950">
-            <p class="text-xs text-slate-500 hidden md:block mb-1">Usuario Activo</p>
-            <div class="flex items-center justify-center md:justify-start gap-2">
-                <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-sm">GM</div>
-                <span class="text-sm font-medium text-white hidden md:block">Gerente</span>
-            </div>
+            <p class="text-xs text-slate-500 hidden md:block mb-2 uppercase tracking-wider font-semibold">Perfil de Usuario</p>
+            <select id="role-selector" onchange="cambiarRol(this.value)" class="w-full bg-slate-800 text-white font-medium border border-slate-700 rounded-lg p-2 text-sm outline-none cursor-pointer focus:ring-2 focus:ring-indigo-500">
+                <option value="admin">👨‍💼 Administrador (GM)</option>
+                <option value="cajero">🧑‍💻 Cajero / Front</option>
+                <option value="cocina">👨‍🍳 Chef / Cocina</option>
+            </select>
         </div>
     </aside>
 
@@ -105,230 +112,62 @@
             </div>
         </section>
 
-        <!-- VISTA 1: PUNTO DE VENTA (POS) -->
-        <section id="view-pos" class="flex-1 overflow-hidden flex flex-col md:flex-row p-4 gap-4 view-section fade-in">
-            <!-- Menú -->
-            <div class="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden h-full">
-                <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                    <div class="flex gap-2" id="category-filters">
-                        <button onclick="filtrarCategoria('Todos')" class="filter-btn px-4 py-1.5 text-sm font-medium bg-slate-800 text-white rounded-md transition-colors" data-cat="Todos">Todos</button>
-                        <button onclick="filtrarCategoria('Bebida')" class="filter-btn px-4 py-1.5 text-sm font-medium bg-slate-200 text-slate-600 rounded-md transition-colors" data-cat="Bebida">Bebidas</button>
-                        <button onclick="filtrarCategoria('Postre')" class="filter-btn px-4 py-1.5 text-sm font-medium bg-slate-200 text-slate-600 rounded-md transition-colors" data-cat="Postre">Postres</button>
-                    </div>
-                    <button onclick="togglePedidosOnline()" id="btn-online-orders" class="px-4 py-1.5 text-sm font-bold bg-slate-200 text-slate-600 rounded-full transition-colors flex items-center gap-2">
-                        🛵 Delivery: OFF
-                    </button>
-                </div>
-                <div class="flex-1 overflow-y-auto p-4">
-                    <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="pos-grid"></div>
-                </div>
-            </div>
-
-            <!-- Carrito / Comanda -->
-            <div class="w-full md:w-80 lg:w-[400px] flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden h-[60vh] md:h-full flex-shrink-0">
-                <div class="p-4 border-b border-slate-100 bg-slate-50 flex flex-col gap-3">
-                    <div class="flex justify-between items-center">
-                        <h3 class="font-bold text-slate-800 text-lg">Comanda</h3>
-                        <span id="pos-tipo-orden" class="bg-indigo-100 text-indigo-800 text-xs py-1 px-3 rounded-full font-bold uppercase tracking-wider">Llevar</span>
-                    </div>
-                    <div class="flex bg-slate-200 p-1 rounded-lg">
-                        <button onclick="setTipoOrden('Llevar')" id="btn-tipo-llevar" class="flex-1 py-1 text-sm font-medium bg-white shadow-sm rounded-md text-slate-800 transition-all">Para Llevar</button>
-                        <button onclick="setTipoOrden('Comedor')" id="btn-tipo-comedor" class="flex-1 py-1 text-sm font-medium text-slate-500 hover:text-slate-700 transition-all">Comedor</button>
-                    </div>
-                </div>
-                
-                <div class="flex-1 overflow-y-auto p-3 flex flex-col gap-2" id="cart-items">
-                    <div class="h-full flex flex-col items-center justify-center text-slate-400 opacity-70">
-                        <span class="text-4xl mb-2">🍽️</span><p class="text-sm font-medium">Agrega productos</p>
-                    </div>
-                </div>
-
-                <div class="p-4 border-t border-slate-100 bg-slate-50">
-                    <input type="text" id="nota-cocina" placeholder="Notas para cocina (Ej. Sin azúcar, extra hielo)..." class="w-full text-sm p-2.5 border border-slate-200 rounded-lg mb-3 bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-
-                    <div class="flex gap-2 mb-3">
-                        <select id="select-cliente" class="flex-1 text-sm p-2 border border-slate-200 rounded-lg bg-white">
-                            <option value="">Público en General</option>
-                        </select>
-                        <div class="flex w-1/3 gap-1 border border-slate-200 rounded-lg overflow-hidden bg-white">
-                            <input type="number" id="input-desc" placeholder="% Desc" class="w-full text-sm p-2 outline-none">
-                            <button onclick="aplicarDescuento()" class="bg-slate-100 text-slate-600 px-2 font-bold hover:bg-slate-200">✔️</button>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <div class="grid grid-cols-4 gap-1">
-                            <button onclick="aplicarPropina(0)" class="tip-btn border border-slate-200 bg-white text-slate-600 rounded py-1 text-xs font-bold" data-tip="0">0%</button>
-                            <button onclick="aplicarPropina(10)" class="tip-btn border border-slate-200 bg-white text-slate-600 rounded py-1 text-xs font-medium" data-tip="10">10%</button>
-                            <button onclick="aplicarPropina(15)" class="tip-btn border border-slate-200 bg-white text-slate-600 rounded py-1 text-xs font-medium" data-tip="15">15%</button>
-                            <button onclick="aplicarPropina(20)" class="tip-btn border border-slate-200 bg-white text-slate-600 rounded py-1 text-xs font-medium" data-tip="20">20%</button>
-                        </div>
-                    </div>
-
-                    <div class="text-sm text-slate-500 space-y-1 mb-3 bg-white p-3 rounded-lg border border-slate-100">
-                        <div class="flex justify-between"><span>Subtotal:</span><span id="cart-subtotal">$0.00</span></div>
-                        <div class="flex justify-between hidden text-red-500 font-medium" id="cart-desc-row"><span>Descuento:</span><span id="cart-desc">-$0.00</span></div>
-                        <div class="flex justify-between"><span>IVA (16%):</span><span id="cart-tax">$0.00</span></div>
-                        <div class="flex justify-between hidden text-blue-500 font-medium" id="cart-tip-row"><span>Propina:</span><span id="cart-tip">+$0.00</span></div>
-                        <div class="border-t border-slate-100 my-1 pt-1 flex justify-between text-lg font-bold text-slate-800">
-                            <span>Total:</span><span id="cart-total" class="text-emerald-600">$0.00</span>
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-2 mb-3">
-                        <button onclick="seleccionarPago('efectivo')" id="btn-pago-efectivo" class="py-2 border-2 border-emerald-500 bg-emerald-50 text-emerald-700 rounded-lg text-sm font-bold shadow-sm transition-all">💵 Efectivo</button>
-                        <button onclick="seleccionarPago('tarjeta')" id="btn-pago-tarjeta" class="py-2 border-2 border-slate-200 bg-white text-slate-500 rounded-lg text-sm font-bold shadow-sm hover:bg-slate-50 transition-all">💳 Tarjeta</button>
-                    </div>
-
-                    <div class="flex gap-2">
-                        <button onclick="guardarEnMesa()" id="btn-guardar-mesa" class="hidden w-1/3 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-lg shadow-sm text-sm">
-                            Guardar
-                        </button>
-                        <button onclick="procesarPago()" id="btn-pay" class="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:text-slate-500 text-white font-bold py-3 rounded-lg shadow-md transition-colors text-lg flex items-center justify-center gap-2">
-                            Cobrar
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- VISTA 2: COCINA (KDS) -->
-        <section id="view-kitchen" class="flex-1 overflow-y-auto p-6 view-section fade-in hidden bg-slate-900 text-slate-200">
-            <div class="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
-                <h3 class="font-bold text-white text-2xl flex items-center gap-3"><span>🔥</span> KDS - Cocina</h3>
-                <div class="flex gap-4 text-sm font-medium bg-slate-800 px-4 py-2 rounded-lg">
-                    <span class="flex items-center gap-2"><div class="w-3 h-3 bg-emerald-500 rounded-full shadow-[0_0_8px_#10b981]"></div> A tiempo</span>
-                    <span class="flex items-center gap-2"><div class="w-3 h-3 bg-yellow-500 rounded-full shadow-[0_0_8px_#eab308]"></div> +3 min</span>
-                    <span class="flex items-center gap-2"><div class="w-3 h-3 bg-red-500 rounded-full shadow-[0_0_8px_#ef4444]"></div> Crítico</span>
-                </div>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="kds-grid"></div>
-        </section>
-
-        <!-- VISTA 3: DASHBOARD -->
-        <section id="view-dashboard" class="flex-1 overflow-y-auto p-6 view-section fade-in hidden bg-slate-50">
-            <div class="max-w-6xl mx-auto gap-6 flex flex-col">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-emerald-500">
-                        <h3 class="text-slate-500 text-sm font-medium">Ingresos (Hoy)</h3>
-                        <p id="dash-ingresos" class="text-3xl font-bold text-slate-800 mt-1">$0.00</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-blue-500">
-                        <h3 class="text-slate-500 text-sm font-medium">Órdenes Completadas</h3>
-                        <p id="dash-ordenes" class="text-3xl font-bold text-slate-800 mt-1">0</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-amber-500">
-                        <h3 class="text-slate-500 text-sm font-medium">Ticket Promedio</h3>
-                        <p id="dash-promedio" class="text-3xl font-bold text-slate-800 mt-1">$0.00</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-purple-500">
-                        <h3 class="text-slate-500 text-sm font-medium">Clientes Atendidos</h3>
-                        <p id="dash-clientes" class="text-3xl font-bold text-slate-800 mt-1">0</p>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 lg:col-span-1">
-                        <h3 class="font-bold text-slate-800 mb-6 flex items-center gap-2"><span>📈</span> Productos Estrella</h3>
-                        <div id="dash-top-products" class="flex flex-col gap-5"></div>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 lg:col-span-2">
-                        <h3 class="font-bold text-slate-800 mb-6 flex items-center gap-2"><span>🧾</span> Actividad Reciente</h3>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-sm">
-                                <thead>
-                                    <tr class="text-slate-400 border-b border-slate-100">
-                                        <th class="pb-3 font-medium px-4">Ticket</th>
-                                        <th class="pb-3 font-medium px-4">Tipo</th>
-                                        <th class="pb-3 font-medium px-4">Artículos</th>
-                                        <th class="pb-3 font-medium px-4 text-right">Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="dash-history" class="divide-y divide-slate-50"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- VISTA 4: INVENTARIO -->
-        <section id="view-inventory" class="flex-1 overflow-y-auto p-6 view-section fade-in hidden bg-slate-50">
+        <!-- VISTA: PROVEEDORES (SUPPLY CHAIN) -->
+        <section id="view-suppliers" class="flex-1 overflow-y-auto p-6 view-section fade-in hidden bg-slate-50">
             <div class="max-w-6xl mx-auto flex flex-col gap-6">
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                    <h3 class="font-bold text-slate-800 mb-4">Alta de Nuevo Producto</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-                        <div class="md:col-span-2">
-                            <label class="text-xs font-semibold text-slate-500 mb-1 block uppercase tracking-wide">Nombre</label>
-                            <input type="text" id="nuevo-prod-nombre" class="w-full p-2.5 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-colors">
-                        </div>
-                        <div>
-                            <label class="text-xs font-semibold text-slate-500 mb-1 block uppercase tracking-wide">Precio ($)</label>
-                            <input type="number" id="nuevo-prod-precio" class="w-full p-2.5 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-colors">
-                        </div>
-                        <div>
-                            <label class="text-xs font-semibold text-slate-500 mb-1 block uppercase tracking-wide">Categoría</label>
-                            <select id="nuevo-prod-cat" class="w-full p-2.5 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                                <option value="Bebida">Bebida</option>
-                                <option value="Postre">Postre</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="text-xs font-semibold text-slate-500 mb-1 block uppercase tracking-wide">Emoji</label>
-                            <div class="flex gap-2">
-                                <input type="text" id="nuevo-prod-emoji" placeholder="🍔" class="w-full p-2.5 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white text-center">
-                                <button onclick="crearProducto()" class="bg-slate-800 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-slate-700 shadow-sm">Crear</button>
-                            </div>
-                        </div>
+                    <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><span>🚚</span> Directorio de Proveedores B2B</h3>
+                    <p class="text-sm text-slate-500 mb-6">Realiza pedidos globales. El inventario aumentará y los costos operativos (incluyendo el envío) se deducirán automáticamente de tu Caja General.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="suppliers-grid">
+                        <!-- Generado por JS -->
                     </div>
                 </div>
+            </div>
+        </section>
 
-                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                        <h3 class="font-bold text-slate-800">Control de Existencias (Stock)</h3>
-                        <button onclick="surtirTodo()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg text-sm font-medium shadow-sm transition-colors flex items-center gap-2">
-                            <span>📦</span> Surtir +10 a Todo
+        <!-- VISTA: RESERVAS -->
+        <section id="view-reservations" class="flex-1 overflow-y-auto p-6 view-section fade-in hidden bg-slate-50">
+            <div class="max-w-5xl mx-auto flex flex-col gap-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-t-4 border-t-indigo-500">
+                    <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><span>📅</span> Agendar Nueva Reserva</h3>
+                    <div class="flex gap-4 items-end flex-wrap">
+                        <div class="flex-1 min-w-[200px]">
+                            <label class="text-xs font-semibold text-slate-500 mb-1 block uppercase tracking-wider">A nombre de</label>
+                            <input type="text" id="res-nombre" placeholder="Ej. Familia Rodríguez" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-slate-500 mb-1 block uppercase tracking-wider">Fecha</label>
+                            <input type="date" id="res-fecha" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-slate-500 mb-1 block uppercase tracking-wider">Hora</label>
+                            <input type="time" id="res-hora" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-slate-500 mb-1 block uppercase tracking-wider">Personas (Pax)</label>
+                            <input type="number" id="res-pax" min="1" max="20" value="2" class="w-24 p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                        <button onclick="crearReserva()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-bold shadow-sm transition-colors">
+                            Agendar
                         </button>
                     </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-4 bg-slate-50 border-b border-slate-100"><h3 class="font-bold text-slate-700">Próximas Reservaciones</h3></div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-sm">
                             <thead class="bg-white text-slate-400 border-b border-slate-100">
                                 <tr>
-                                    <th class="px-6 py-4 font-semibold">Producto</th>
-                                    <th class="px-6 py-4 font-semibold text-center">Categoría</th>
-                                    <th class="px-6 py-4 font-semibold text-right">Precio Venta</th>
-                                    <th class="px-6 py-4 font-semibold text-center">Stock Actual</th>
-                                    <th class="px-6 py-4 font-semibold text-center">Acción (Cuesta 40%)</th>
+                                    <th class="px-6 py-4 font-semibold">Cliente</th>
+                                    <th class="px-6 py-4 font-semibold">Fecha y Hora</th>
+                                    <th class="px-6 py-4 font-semibold text-center">Pax</th>
+                                    <th class="px-6 py-4 font-semibold text-center">Estado</th>
+                                    <th class="px-6 py-4 font-semibold text-right">Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody id="inventory-table" class="divide-y divide-slate-50"></tbody>
+                            <tbody id="reservations-table" class="divide-y divide-slate-50"></tbody>
                         </table>
                     </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- VISTA 5: CLIENTES (CRM) -->
-        <section id="view-customers" class="flex-1 overflow-y-auto p-6 view-section fade-in hidden bg-slate-50">
-            <div class="max-w-4xl mx-auto flex flex-col gap-6">
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                    <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><span>⭐</span> Programa de Lealtad</h3>
-                    <div class="flex gap-4">
-                        <input type="text" id="nuevo-cliente-nombre" placeholder="Nombre completo" class="flex-1 p-2.5 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                        <input type="tel" id="nuevo-cliente-tel" placeholder="Teléfono" class="flex-1 p-2.5 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                        <button onclick="agregarCliente()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2.5 rounded-lg font-medium shadow-sm transition-colors">Registrar</button>
-                    </div>
-                </div>
-                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <table class="w-full text-left text-sm">
-                        <thead class="bg-slate-50 text-slate-400 border-b border-slate-100">
-                            <tr>
-                                <th class="px-6 py-4 font-semibold">Cliente</th>
-                                <th class="px-6 py-4 font-semibold">Teléfono</th>
-                                <th class="px-6 py-4 font-semibold text-center">Puntos Acumulados</th>
-                            </tr>
-                        </thead>
-                        <tbody id="customers-table" class="divide-y divide-slate-50"></tbody>
-                    </table>
                 </div>
             </div>
         </section>
@@ -529,6 +368,27 @@
             pedidosOnlineActivos: false,
             intervaloPedidos: null,
 
+            // Permisos y Roles (RBAC)
+            rolActivo: 'admin',
+            permisos: {
+                'admin': ['tables', 'pos', 'kitchen', 'dashboard', 'inventory', 'suppliers', 'customers', 'reservations', 'hr', 'finance', 'history'],
+                'cajero': ['tables', 'pos', 'customers', 'reservations', 'history'],
+                'cocina': ['kitchen']
+            },
+
+            // Reservaciones
+            reservas: [
+                { id: 1, nombre: "Mesa VIP Directivos", fecha: "2026-10-15", hora: "14:30", pax: 6, estado: "Pendiente" },
+                { id: 2, nombre: "Cita Romántica López", fecha: "2026-10-15", hora: "20:00", pax: 2, estado: "Pendiente" }
+            ],
+
+            // Proveedores (Supply Chain)
+            proveedores: [
+                { id: 1, nombre: "Cafetalera Altura S.A.", especialidad: "Café en Grano Premium", tiempoEntrega: "24h", costoEnvio: 250, badge: "Verificado" },
+                { id: 2, nombre: "Lácteos del Valle", especialidad: "Leche, Mantequilla, Quesos", tiempoEntrega: "12h", costoEnvio: 100, badge: "Local" },
+                { id: 3, nombre: "Panadería Mayorista", especialidad: "Panadería y Repostería Congelada", tiempoEntrega: "48h", costoEnvio: 300, badge: "Económico" }
+            ],
+
             // Inventario
             productos: [
                 { id: 1, nombre: "Café Americano", categoria: "Bebida", precio: 45.00, emoji: "☕", color: "bg-orange-50 text-orange-800 border-orange-200", stock: 50, ventasHistoricas: 0 },
@@ -542,8 +402,40 @@
 
         const colores = ["bg-amber-50 text-amber-800 border-amber-200", "bg-cyan-50 text-cyan-800 border-cyan-200", "bg-rose-50 text-rose-800 border-rose-200", "bg-indigo-50 text-indigo-800 border-indigo-200"];
 
+        // --- STREAMING_CHUNK:Sistema de Control de Acceso (RBAC)... ---
+        function cambiarRol(rol) {
+            estado.rolActivo = rol;
+            const vistasPermitidas = estado.permisos[rol];
+            
+            // Ocultar/Mostrar botones del menú lateral dinámicamente
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                const vistaMenu = btn.id.replace('nav-', '');
+                if(vistasPermitidas.includes(vistaMenu)) {
+                    btn.classList.remove('hidden');
+                    btn.classList.add('flex'); // Restaurar flexbox layout
+                } else {
+                    btn.classList.add('hidden');
+                    btn.classList.remove('flex');
+                }
+            });
+
+            // Si el rol no tiene permiso para la vista actual, expulsarlo a su inicio seguro
+            if(!vistasPermitidas.includes(estado.vistaActual)) {
+                cambiarVista(vistasPermitidas[0]);
+            }
+            
+            const nombresRoles = { 'admin': 'Administrador General', 'cajero': 'Cajero / Operador', 'cocina': 'Chef de Cocina' };
+            mostrarNotificacion(`Sesión iniciada como: ${nombresRoles[rol]}`, 'info');
+        }
+
         // --- NAVEGACIÓN PRINCIPAL ---
         function cambiarVista(vista) {
+            // Verificación de seguridad antes de navegar
+            if(!estado.permisos[estado.rolActivo].includes(vista)) {
+                mostrarNotificacion('Acceso denegado: No tienes permisos para esta área.', 'error');
+                return;
+            }
+
             estado.vistaActual = vista;
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
             document.getElementById(`view-${vista}`).classList.remove('hidden');
@@ -554,7 +446,7 @@
             });
             document.getElementById(`nav-${vista}`).classList.add('bg-slate-800', 'text-white');
 
-            const titulos = { pos: "Punto de Venta", dashboard: "Panel de Control", inventory: "Gestión de Inventario", customers: "Directorio de Clientes", finance: "Finanzas y Contabilidad", kitchen: "Monitor de Cocina KDS", tables: "Plano de Comedor", hr: "Recursos Humanos", history: "Historial de Transacciones" };
+            const titulos = { pos: "Punto de Venta", dashboard: "Panel de Control", inventory: "Gestión de Inventario", customers: "Directorio de Clientes", finance: "Finanzas y Contabilidad", kitchen: "Monitor de Cocina KDS", tables: "Plano de Comedor", hr: "Recursos Humanos", history: "Historial de Transacciones", reservations: "Libro de Reservaciones", suppliers: "Directorio de Proveedores" };
             document.getElementById('view-title').innerText = titulos[vista];
 
             // Renderizar la vista correspondiente
@@ -567,6 +459,8 @@
             if (vista === 'kitchen') renderizarCocina();
             if (vista === 'hr') renderizarRRHH();
             if (vista === 'history') renderizarHistorial();
+            if (vista === 'reservations') renderizarReservas();
+            if (vista === 'suppliers') renderizarProveedores();
         }
 
         function actualizarCaja() {
@@ -1153,6 +1047,128 @@
             if(n) { estado.clientes.push({id: Date.now(), nombre: n, telefono: t, puntos: 0}); renderizarClientes(); mostrarNotificacion('Cliente guardado', 'success'); }
         }
 
+        // --- STREAMING_CHUNK:Módulo de Reservaciones de Mesas... ---
+        function renderizarReservas() {
+            const tbody = document.getElementById('reservations-table');
+            tbody.innerHTML = '';
+            
+            if(estado.reservas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-500">No hay reservaciones agendadas.</td></tr>';
+                return;
+            }
+
+            estado.reservas.forEach((res, index) => {
+                const isCompletada = res.estado === 'Atendida';
+                const estadoClass = isCompletada ? 'bg-slate-100 text-slate-500' : 'bg-emerald-100 text-emerald-700';
+                
+                const btnAccion = isCompletada 
+                    ? `<span class="text-xs font-bold text-slate-400">Finalizada</span>`
+                    : `<button onclick="completarReserva(${index})" class="bg-indigo-50 text-indigo-600 border border-indigo-200 px-3 py-1.5 rounded text-xs font-bold hover:bg-indigo-100 shadow-sm transition-colors">Marcar Llegada</button>
+                       <button onclick="cancelarReserva(${index})" class="ml-2 text-red-500 hover:text-red-700 text-xs font-bold transition-colors">Cancelar</button>`;
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition-colors ${isCompletada ? 'opacity-60' : ''}">
+                        <td class="px-6 py-4 font-bold text-slate-800">${res.nombre}</td>
+                        <td class="px-6 py-4 font-medium text-slate-600">${res.fecha} <span class="text-slate-400 ml-1">| ${res.hora}</span></td>
+                        <td class="px-6 py-4 text-center font-bold text-indigo-600">${res.pax} <span class="text-xs font-normal text-slate-400">pax</span></td>
+                        <td class="px-6 py-4 text-center"><span class="px-2 py-1.5 rounded text-xs font-bold uppercase tracking-wider ${estadoClass}">${res.estado}</span></td>
+                        <td class="px-6 py-4 text-right">${btnAccion}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function crearReserva() {
+            const nombre = document.getElementById('res-nombre').value;
+            const fecha = document.getElementById('res-fecha').value;
+            const hora = document.getElementById('res-hora').value;
+            const pax = document.getElementById('res-pax').value;
+            
+            if(!nombre || !fecha || !hora) { mostrarNotificacion('Faltan datos para agendar la reserva', 'error'); return; }
+            
+            estado.reservas.push({ id: Date.now(), nombre, fecha, hora, pax, estado: 'Pendiente' });
+            
+            // Ordenar reservas cronológicamente
+            estado.reservas.sort((a,b) => new Date(`${a.fecha}T${a.hora}`) - new Date(`${b.fecha}T${b.hora}`));
+            
+            document.getElementById('res-nombre').value = '';
+            renderizarReservas();
+            mostrarNotificacion('Reserva agendada exitosamente', 'success');
+        }
+
+        function completarReserva(index) {
+            estado.reservas[index].estado = 'Atendida';
+            renderizarReservas();
+            mostrarNotificacion(`Reserva de ${estado.reservas[index].nombre} marcada como atendida.`, 'info');
+        }
+
+        function cancelarReserva(index) {
+            estado.reservas.splice(index, 1);
+            renderizarReservas();
+            mostrarNotificacion('Reserva cancelada y eliminada.', 'info');
+        }
+
+        // --- STREAMING_CHUNK:Módulo de Compras a Proveedores (B2B)... ---
+        function renderizarProveedores() {
+            const grid = document.getElementById('suppliers-grid');
+            grid.innerHTML = '';
+            
+            estado.proveedores.forEach((prov, index) => {
+                const colorBadge = prov.badge === 'Verificado' ? 'bg-blue-50 text-blue-600' : (prov.badge === 'Local' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600');
+                
+                grid.innerHTML += `
+                    <div class="border border-slate-200 rounded-xl p-6 bg-white hover:shadow-lg transition-shadow relative overflow-hidden group flex flex-col justify-between h-full">
+                        <div class="absolute top-0 right-0 ${colorBadge} text-[10px] font-bold px-3 py-1.5 rounded-bl-lg uppercase tracking-wider">${prov.badge}</div>
+                        <div>
+                            <div class="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-xl mb-3 shadow-inner">🏢</div>
+                            <h4 class="font-bold text-lg text-slate-800 leading-tight">${prov.nombre}</h4>
+                            <p class="text-sm text-slate-500 mt-1 mb-4 h-10">${prov.especialidad}</p>
+                            
+                            <div class="flex justify-between text-xs font-semibold text-slate-600 mb-5 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                <span class="flex items-center gap-1">⏱️ Entrega: ${prov.tiempoEntrega}</span>
+                                <span class="flex items-center gap-1">🚚 Envío: $${prov.costoEnvio}</span>
+                            </div>
+                        </div>
+                        
+                        <button onclick="pedirProveedor('${prov.nombre}', ${prov.costoEnvio})" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-lg transition-colors text-sm shadow-sm flex items-center justify-center gap-2">
+                            <span>📦</span> Emitir Orden de Compra
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        function pedirProveedor(nombre, costoEnvio) {
+            // Calcular cuánto cuesta hacer un "Resurtido Global" de este proveedor
+            let costoMercancia = 0;
+            let itemsSurtidos = 0;
+            
+            estado.productos.forEach(p => { 
+                p.stock += 20; 
+                costoMercancia += (p.precio * 0.4) * 20; 
+                itemsSurtidos += 20;
+            });
+            
+            const totalGasto = costoMercancia + costoEnvio;
+            
+            // Deducir del ERP
+            estado.caja -= totalGasto;
+            estado.costoInventario += costoMercancia;
+            estado.gastosOperativos += costoEnvio; // El envío clasifica como gasto
+            
+            // Registrar los movimientos financieros en los historiales
+            estado.historialGastos.push({ concepto: `Logística / Envío: ${nombre}`, monto: costoEnvio });
+            
+            actualizarCaja();
+            
+            // Si estamos en la vista de inventario, la refrescamos en vivo
+            if(estado.vistaActual === 'inventory') renderizarInventario();
+            if(estado.vistaActual === 'dashboard') renderizarDashboard();
+            if(estado.vistaActual === 'finance') renderizarFinanzas();
+            
+            mostrarNotificacion(`🚚 Cargamento recibido de ${nombre}. Inventario surtido (+${itemsSurtidos} uds). Gasto total: -$${totalGasto.toFixed(2)}`, 'success');
+        }
+
         // --- STREAMING_CHUNK:Módulo de Historial y Devoluciones... ---
         function renderizarHistorial() {
             const tbody = document.getElementById('history-table');
@@ -1330,6 +1346,7 @@
 
         // Arrancar en vista principal
         window.onload = () => { 
+            cambiarRol('admin'); // Inicializa permisos de UI
             cambiarVista('pos'); 
             actualizarCaja(); // Set inicial de caja $1000
         };
