@@ -59,6 +59,9 @@
             <button onclick="cambiarVista('finance')" id="nav-finance" class="nav-btn flex items-center p-3 rounded-lg hover:bg-slate-800 hover:text-white transition-colors">
                 <span class="text-xl md:mr-3 text-center w-6">💰</span><span class="hidden md:block font-medium">Finanzas</span>
             </button>
+            <button onclick="cambiarVista('history')" id="nav-history" class="nav-btn flex items-center p-3 rounded-lg hover:bg-slate-800 hover:text-white transition-colors">
+                <span class="text-xl md:mr-3 text-center w-6">📜</span><span class="hidden md:block font-medium">Historial</span>
+            </button>
         </nav>
         
         <div class="p-4 border-t border-slate-800 text-center md:text-left bg-slate-950">
@@ -112,6 +115,9 @@
                         <button onclick="filtrarCategoria('Bebida')" class="filter-btn px-4 py-1.5 text-sm font-medium bg-slate-200 text-slate-600 rounded-md transition-colors" data-cat="Bebida">Bebidas</button>
                         <button onclick="filtrarCategoria('Postre')" class="filter-btn px-4 py-1.5 text-sm font-medium bg-slate-200 text-slate-600 rounded-md transition-colors" data-cat="Postre">Postres</button>
                     </div>
+                    <button onclick="togglePedidosOnline()" id="btn-online-orders" class="px-4 py-1.5 text-sm font-bold bg-slate-200 text-slate-600 rounded-full transition-colors flex items-center gap-2">
+                        🛵 Delivery: OFF
+                    </button>
                 </div>
                 <div class="flex-1 overflow-y-auto p-4">
                     <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="pos-grid"></div>
@@ -408,6 +414,33 @@
             </div>
         </section>
 
+        <!-- VISTA 8: HISTORIAL DE TICKETS Y DEVOLUCIONES -->
+        <section id="view-history" class="flex-1 overflow-y-auto p-6 view-section fade-in hidden bg-slate-50">
+            <div class="max-w-6xl mx-auto bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
+                <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-lg">Historial de Transacciones</h3>
+                        <p class="text-sm text-slate-500 mt-1">Reimprime recibos o procesa devoluciones (Refunds).</p>
+                    </div>
+                </div>
+                <div class="overflow-x-auto flex-1">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-white text-slate-400 border-b border-slate-100 sticky top-0">
+                            <tr>
+                                <th class="px-6 py-4 font-semibold">Ticket / Fecha</th>
+                                <th class="px-6 py-4 font-semibold text-center">Tipo</th>
+                                <th class="px-6 py-4 font-semibold text-center">Método</th>
+                                <th class="px-6 py-4 font-semibold text-center">Estado</th>
+                                <th class="px-6 py-4 font-semibold text-right">Total</th>
+                                <th class="px-6 py-4 font-semibold text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table" class="divide-y divide-slate-50"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
         <!-- Modal Recibo -->
         <div id="modal-recibo" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4 fade-in">
             <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col border border-slate-200">
@@ -492,6 +525,10 @@
             // Cocina KDS
             ordenesCocina: [],
 
+            // Delivery & Online Orders
+            pedidosOnlineActivos: false,
+            intervaloPedidos: null,
+
             // Inventario
             productos: [
                 { id: 1, nombre: "Café Americano", categoria: "Bebida", precio: 45.00, emoji: "☕", color: "bg-orange-50 text-orange-800 border-orange-200", stock: 50, ventasHistoricas: 0 },
@@ -517,7 +554,7 @@
             });
             document.getElementById(`nav-${vista}`).classList.add('bg-slate-800', 'text-white');
 
-            const titulos = { pos: "Punto de Venta", dashboard: "Panel de Control", inventory: "Gestión de Inventario", customers: "Directorio de Clientes", finance: "Finanzas y Contabilidad", kitchen: "Monitor de Cocina KDS", tables: "Plano de Comedor", hr: "Recursos Humanos" };
+            const titulos = { pos: "Punto de Venta", dashboard: "Panel de Control", inventory: "Gestión de Inventario", customers: "Directorio de Clientes", finance: "Finanzas y Contabilidad", kitchen: "Monitor de Cocina KDS", tables: "Plano de Comedor", hr: "Recursos Humanos", history: "Historial de Transacciones" };
             document.getElementById('view-title').innerText = titulos[vista];
 
             // Renderizar la vista correspondiente
@@ -529,6 +566,7 @@
             if (vista === 'finance') renderizarFinanzas();
             if (vista === 'kitchen') renderizarCocina();
             if (vista === 'hr') renderizarRRHH();
+            if (vista === 'history') renderizarHistorial();
         }
 
         function actualizarCaja() {
@@ -794,7 +832,9 @@
                 fecha: new Date(), 
                 articulos: estado.ordenActual.reduce((a,c)=>a+c.cantidad,0), 
                 total: estado.totalActual, 
+                propina: estado.propinaActual,
                 metodo: estado.metodoPago, 
+                estadoVenta: 'Completado', // 'Completado' o 'Reembolsado'
                 detalle: [...estado.ordenActual] 
             });
             
@@ -1111,6 +1151,168 @@
             const n = document.getElementById('nuevo-cliente-nombre').value;
             const t = document.getElementById('nuevo-cliente-tel').value;
             if(n) { estado.clientes.push({id: Date.now(), nombre: n, telefono: t, puntos: 0}); renderizarClientes(); mostrarNotificacion('Cliente guardado', 'success'); }
+        }
+
+        // --- STREAMING_CHUNK:Módulo de Historial y Devoluciones... ---
+        function renderizarHistorial() {
+            const tbody = document.getElementById('history-table');
+            tbody.innerHTML = '';
+            if (estado.historialVentas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-slate-500">No hay transacciones registradas.</td></tr>';
+                return;
+            }
+
+            estado.historialVentas.forEach(v => {
+                const isReembolsado = v.estadoVenta === 'Reembolsado';
+                const colorEstado = isReembolsado ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700';
+                const badgeTipo = v.tipo === 'Delivery' ? 'bg-purple-100 text-purple-700' : (v.tipo === 'Llevar' ? 'bg-indigo-100 text-indigo-700' : 'bg-rose-100 text-rose-700');
+                const btnReembolsar = isReembolsado ? 
+                    `<button disabled class="text-xs px-3 py-1 bg-slate-100 text-slate-400 rounded cursor-not-allowed">Reembolsado</button>` :
+                    `<button onclick="reembolsarTicket('${v.id}')" class="text-xs px-3 py-1 bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded font-bold transition-colors">Reembolsar</button>`;
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition-colors ${isReembolsado ? 'opacity-70' : ''}">
+                        <td class="px-6 py-4">
+                            <div class="font-bold text-slate-800">${v.id}</div>
+                            <div class="text-xs text-slate-500">${v.fecha.toLocaleString()}</div>
+                        </td>
+                        <td class="px-6 py-4 text-center"><span class="px-2 py-1 text-xs font-bold rounded ${badgeTipo}">${v.tipo}</span></td>
+                        <td class="px-6 py-4 text-center text-slate-600 uppercase text-xs font-bold">${v.metodo}</td>
+                        <td class="px-6 py-4 text-center"><span class="px-2 py-1 text-xs font-bold rounded ${colorEstado}">${v.estadoVenta}</span></td>
+                        <td class="px-6 py-4 text-right font-bold ${isReembolsado ? 'text-slate-500 line-through' : 'text-emerald-600'}">$${v.total.toFixed(2)}</td>
+                        <td class="px-6 py-4 flex gap-2 justify-center">
+                            <button onclick="mostrarRecibo('${v.id}')" class="text-xs px-3 py-1 bg-slate-800 text-white hover:bg-slate-700 rounded font-bold transition-colors">Ver</button>
+                            ${btnReembolsar}
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function reembolsarTicket(id) {
+            const ticket = estado.historialVentas.find(v => v.id === id);
+            if (!ticket || ticket.estadoVenta === 'Reembolsado') return;
+
+            // Devolver dinero
+            estado.caja -= ticket.total;
+            estado.ventasBrutas -= (ticket.total - ticket.propina - (ticket.total * estado.impuestoIVA));
+            estado.propinasTotales -= ticket.propina;
+            
+            // Devolver stock
+            ticket.detalle.forEach(item => {
+                const prod = estado.productos.find(p => p.id === item.id);
+                if (prod) {
+                    prod.stock += item.cantidad;
+                    prod.ventasHistoricas -= item.cantidad;
+                }
+            });
+
+            ticket.estadoVenta = 'Reembolsado';
+            
+            actualizarCaja();
+            renderizarHistorial();
+            if(estado.vistaActual === 'dashboard') renderizarDashboard();
+            if(estado.vistaActual === 'finance') renderizarFinanzas();
+            mostrarNotificacion(`Ticket ${id} reembolsado exitosamente`, 'info');
+        }
+
+        // --- STREAMING_CHUNK:Simulador de Pedidos Online (Delivery)... ---
+        function togglePedidosOnline() {
+            estado.pedidosOnlineActivos = !estado.pedidosOnlineActivos;
+            const btn = document.getElementById('btn-online-orders');
+            
+            if (estado.pedidosOnlineActivos) {
+                btn.className = "px-4 py-1.5 text-sm font-bold bg-purple-600 text-white rounded-full transition-colors flex items-center gap-2 animate-pulse shadow-lg shadow-purple-500/30";
+                btn.innerHTML = "🛵 Delivery: ON";
+                mostrarNotificacion('Conexión Delivery Activa. Esperando pedidos...', 'info');
+                
+                // Generar pedidos cada 15-30 segundos aleatoriamente
+                generarSiguientePedidoOnline();
+            } else {
+                btn.className = "px-4 py-1.5 text-sm font-bold bg-slate-200 text-slate-600 rounded-full transition-colors flex items-center gap-2";
+                btn.innerHTML = "🛵 Delivery: OFF";
+                clearTimeout(estado.intervaloPedidos);
+                mostrarNotificacion('Aplicación de Delivery desconectada.', 'info');
+            }
+        }
+
+        function generarSiguientePedidoOnline() {
+            if (!estado.pedidosOnlineActivos) return;
+            
+            const tiempoEspera = Math.floor(Math.random() * (30000 - 15000 + 1) + 15000); // 15 a 30 segs
+            estado.intervaloPedidos = setTimeout(() => {
+                generarPedidoOnline();
+                generarSiguientePedidoOnline(); // Programar el siguiente
+            }, tiempoEspera);
+        }
+
+        function generarPedidoOnline() {
+            const plataformas = ['UberEats', 'Rappi', 'DidiFood'];
+            const plataforma = plataformas[Math.floor(Math.random() * plataformas.length)];
+            
+            // Generar 1 a 3 productos aleatorios con stock
+            const productosDisponibles = estado.productos.filter(p => p.stock > 0);
+            if (productosDisponibles.length === 0) return; // No hay nada que vender
+            
+            const numItems = Math.floor(Math.random() * 3) + 1;
+            let ordenSimulada = [];
+            let subtotal = 0;
+
+            for (let i = 0; i < numItems; i++) {
+                const prod = productosDisponibles[Math.floor(Math.random() * productosDisponibles.length)];
+                const cant = Math.floor(Math.random() * 2) + 1; // 1 o 2 de cantidad
+                
+                if (prod.stock >= cant) {
+                    const existente = ordenSimulada.find(x => x.id === prod.id);
+                    if(existente) existente.cantidad += cant;
+                    else ordenSimulada.push({ ...prod, cantidad: cant });
+                    
+                    prod.stock -= cant;
+                    prod.ventasHistoricas += cant;
+                    subtotal += (prod.precio * cant);
+                }
+            }
+
+            if (ordenSimulada.length === 0) return;
+
+            const iva = subtotal * estado.impuestoIVA;
+            const total = subtotal + iva;
+            const idVenta = `DLV-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+
+            // Registrar Venta Financieramente
+            estado.historialVentas.unshift({ 
+                id: idVenta, 
+                tipo: 'Delivery',
+                fecha: new Date(), 
+                articulos: ordenSimulada.reduce((a,c)=>a+c.cantidad,0), 
+                total: total, 
+                propina: 0,
+                metodo: 'App', 
+                estadoVenta: 'Completado',
+                detalle: ordenSimulada 
+            });
+            
+            estado.ventasBrutas += subtotal + iva;
+            estado.caja += total;
+            
+            // Mandar a Cocina KDS
+            estado.ordenesCocina.push({ 
+                id: idVenta, 
+                tipo: 'Delivery',
+                mesa: plataforma,
+                items: ordenSimulada, 
+                nota: `APP: ${plataforma} 🚀`,
+                timestamp: Date.now() 
+            });
+
+            // Notificar y actualizar UI
+            mostrarNotificacion(`🔔 ¡Nuevo pedido de ${plataforma}! ($${total.toFixed(2)})`, 'success');
+            actualizarCaja();
+            if(estado.vistaActual === 'dashboard') renderizarDashboard();
+            if(estado.vistaActual === 'kitchen') renderizarCocina();
+            if(estado.vistaActual === 'inventory') renderizarInventario();
+            if(estado.vistaActual === 'history') renderizarHistorial();
+            if(estado.vistaActual === 'pos') renderizarMenuPOS(); // Refrescar stock visual
         }
 
         // --- UTILIDADES ---
