@@ -272,28 +272,37 @@
         </section>
 
         <section id="view-inventory" class="flex-1 overflow-y-auto p-6 view-section fade-in hidden bg-slate-50">
-            <div class="max-w-6xl mx-auto flex flex-col gap-6">
+            <div class="max-w-7xl mx-auto flex flex-col gap-6">
                 <!-- Controles Superiores -->
-                <div class="flex justify-between items-end bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <div>
-                        <h3 class="font-black text-slate-800 text-2xl tracking-tight">Supply Chain & Inventario</h3>
-                        <p class="text-sm text-slate-500 mt-1">Supervisa tu stock, edita precios y registra mermas operativas.</p>
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-end bg-white p-6 rounded-2xl shadow-sm border border-slate-200 gap-4">
+                    <div class="flex-1">
+                        <h3 class="font-black text-slate-800 text-2xl tracking-tight">Supply Chain & Rentabilidad</h3>
+                        <p class="text-sm text-slate-500 mt-1">Supervisa stock, márgenes de ganancia, costos unitarios y registra mermas.</p>
                     </div>
-                    <button onclick="surtirTodo()" class="bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg shadow-slate-900/20 transition-all flex items-center gap-2">
-                        📦 Restock Masivo (+10)
-                    </button>
+                    <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                        <!-- Buscador -->
+                        <div class="relative flex-1 sm:w-64">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+                            <input type="text" id="inventario-buscar" onkeyup="buscarInventario(this.value)" placeholder="Buscar producto..." class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-9 pr-4 outline-none focus:border-indigo-500 text-sm font-medium transition-all">
+                        </div>
+                        <button onclick="abrirModalNuevoProducto()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2">
+                            ✨ Nuevo Producto
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Tabla de Inventario Dinámica -->
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
                             <thead class="bg-slate-50 text-slate-500 border-b border-slate-200">
                                 <tr>
-                                    <th class="px-6 py-4 font-black uppercase tracking-wider text-[10px]">SKU / Producto</th>
-                                    <th class="px-6 py-4 font-black uppercase tracking-wider text-[10px] text-center">Stock Físico</th>
-                                    <th class="px-6 py-4 font-black uppercase tracking-wider text-[10px] text-right">Precio Venta (MXN)</th>
-                                    <th class="px-6 py-4 font-black uppercase tracking-wider text-[10px] text-center">Gestión Operativa</th>
+                                    <th class="px-5 py-4 font-black uppercase tracking-wider text-[10px]">Producto</th>
+                                    <th class="px-5 py-4 font-black uppercase tracking-wider text-[10px] text-center">Stock</th>
+                                    <th class="px-5 py-4 font-black uppercase tracking-wider text-[10px] text-right">Costo Base</th>
+                                    <th class="px-5 py-4 font-black uppercase tracking-wider text-[10px] text-right">Precio Venta</th>
+                                    <th class="px-5 py-4 font-black uppercase tracking-wider text-[10px] text-center">Margen Bruto</th>
+                                    <th class="px-5 py-4 font-black uppercase tracking-wider text-[10px] text-center">Gestión Operativa</th>
                                 </tr>
                             </thead>
                             <tbody id="inventory-table" class="divide-y divide-slate-100"></tbody>
@@ -533,22 +542,64 @@
 
         <!-- MODAL EDITAR PRECIO -->
         <div id="modal-precio" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4 fade-in">
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden flex flex-col">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col">
                 <div class="p-6 bg-slate-50 border-b border-slate-100">
-                    <h3 class="font-black text-slate-800 text-lg">Actualizar Precio</h3>
-                    <p class="text-xs text-slate-500 mt-1" id="precio-prod-nombre">Producto</p>
+                    <h3 class="font-black text-slate-800 text-lg" id="modal-producto-titulo">Gestión de Producto</h3>
+                    <p class="text-xs text-slate-500 mt-1" id="precio-prod-nombre">Edita los valores financieros del producto.</p>
                 </div>
-                <div class="p-6">
-                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Nuevo Precio de Venta (MXN)</label>
-                    <div class="relative">
-                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
-                        <input type="number" id="input-nuevo-precio" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-8 pr-4 outline-none focus:border-indigo-500 font-mono text-xl font-bold">
+                <div class="p-6 space-y-4">
+                    <input type="hidden" id="input-prod-id">
+                    
+                    <div id="div-nuevo-nombre" class="hidden">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Nombre y Emoji</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="input-nuevo-emoji" placeholder="☕" class="w-16 bg-slate-50 border border-slate-200 rounded-xl py-3 text-center outline-none focus:border-indigo-500 text-lg">
+                            <input type="text" id="input-nuevo-nombre" placeholder="Nombre" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 outline-none focus:border-indigo-500 font-bold">
+                        </div>
                     </div>
-                    <input type="hidden" id="input-precio-id">
+
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Costo de Insumos (MXN)</label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                            <input type="number" id="input-nuevo-costo" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-8 pr-4 outline-none focus:border-indigo-500 font-mono font-bold text-slate-600">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Precio al Público (MXN)</label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                            <input type="number" id="input-nuevo-precio" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-8 pr-4 outline-none focus:border-indigo-500 font-mono font-bold text-emerald-600">
+                        </div>
+                    </div>
                 </div>
                 <div class="p-4 bg-slate-50 border-t border-slate-100 flex gap-2">
-                    <button onclick="cerrarModalPrecio()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 rounded-xl transition-colors">Cancelar</button>
-                    <button onclick="guardarNuevoPrecio()" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl transition-colors shadow-md shadow-emerald-500/20">Guardar</button>
+                    <button onclick="cerrarModalProducto()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 rounded-xl transition-colors">Cancelar</button>
+                    <button onclick="guardarProducto()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition-colors shadow-md shadow-indigo-600/20">Guardar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL SURTIR INVENTARIO -->
+        <div id="modal-surtir" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4 fade-in">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col">
+                <div class="p-6 bg-slate-900 border-b border-slate-800 text-white">
+                    <h3 class="font-black text-xl">Surtir Mercancía</h3>
+                    <p class="text-xs text-slate-400 mt-1" id="surtir-prod-nombre">Producto</p>
+                </div>
+                <div class="p-6">
+                    <input type="hidden" id="surtir-prod-id">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Cantidad a Surtir (Unidades)</label>
+                    <input type="number" id="input-surtir-cant" onkeyup="calcularCostoSurtir()" onchange="calcularCostoSurtir()" value="10" min="1" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 outline-none focus:border-indigo-500 font-mono text-xl font-bold mb-4 text-center">
+                    
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <div class="flex justify-between text-sm mb-1 text-slate-500 font-medium"><span>Costo Unitario:</span><span id="surtir-costo-uni" class="font-mono">$0.00</span></div>
+                        <div class="flex justify-between text-lg font-black text-slate-800 border-t border-slate-200 pt-2 mt-2"><span>Inversión Total:</span><span id="surtir-costo-total" class="text-rose-600 font-mono">-$0.00</span></div>
+                    </div>
+                </div>
+                <div class="p-4 bg-slate-50 border-t border-slate-100 flex gap-2">
+                    <button onclick="cerrarModalSurtir()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 rounded-xl transition-colors">Cancelar</button>
+                    <button onclick="confirmarSurtir()" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl transition-colors shadow-md shadow-emerald-500/20">Autorizar Compra</button>
                 </div>
             </div>
         </div>
@@ -627,13 +678,15 @@
                 { id: 2, codigo: "EMPRESA20", descuento: 20, usos: 0, activo: true }
             ],
 
+            // Inventario mejorado con COSTO y PRECIO independientes
+            busquedaInventario: '',
             productos: [
-                { id: 1, nombre: "Espresso Doble", categoria: "Bebida", precio: 45.00, emoji: "☕", stock: 50, ventasHistoricas: 15 },
-                { id: 2, nombre: "Capuchino Vainilla", categoria: "Bebida", precio: 65.00, emoji: "☕", stock: 30, ventasHistoricas: 42 },
-                { id: 3, nombre: "Matcha Latte Frío", categoria: "Bebida", precio: 85.00, emoji: "🧊", stock: 25, ventasHistoricas: 28 },
-                { id: 4, nombre: "Croissant Francés", categoria: "Postre", precio: 45.00, emoji: "🥐", stock: 15, ventasHistoricas: 35 },
-                { id: 5, nombre: "Cheesecake NY", categoria: "Postre", precio: 75.00, emoji: "🍰", stock: 10, ventasHistoricas: 20 },
-                { id: 6, nombre: "Galleta Choco Chunk", categoria: "Postre", precio: 30.00, emoji: "🍪", stock: 40, ventasHistoricas: 55 }
+                { id: 1, nombre: "Espresso Doble", categoria: "Bebida", costo: 12.00, precio: 45.00, emoji: "☕", stock: 50, ventasHistoricas: 15 },
+                { id: 2, nombre: "Capuchino Vainilla", categoria: "Bebida", costo: 22.00, precio: 65.00, emoji: "☕", stock: 30, ventasHistoricas: 42 },
+                { id: 3, nombre: "Matcha Latte Frío", categoria: "Bebida", costo: 35.00, precio: 85.00, emoji: "🧊", stock: 25, ventasHistoricas: 28 },
+                { id: 4, nombre: "Croissant Francés", categoria: "Postre", costo: 15.00, precio: 45.00, emoji: "🥐", stock: 15, ventasHistoricas: 35 },
+                { id: 5, nombre: "Cheesecake NY", categoria: "Postre", costo: 28.00, precio: 75.00, emoji: "🍰", stock: 10, ventasHistoricas: 20 },
+                { id: 6, nombre: "Galleta Choco Chunk", categoria: "Postre", costo: 10.00, precio: 30.00, emoji: "🍪", stock: 40, ventasHistoricas: 55 }
             ]
         };
 
@@ -1122,25 +1175,45 @@
         });
 
         /* ==========================================
-           9. INVENTARIO, MERMAS Y EDICIÓN DE PRECIOS
+           9. SUPPLY CHAIN, INVENTARIO Y COSTOS (MEJORADO)
            ========================================== */
+        function buscarInventario(val) {
+            estado.busquedaInventario = val.toLowerCase();
+            renderizarInventario();
+        }
+
         function renderizarInventario() {
             const tbody = document.getElementById('inventory-table');
             tbody.innerHTML = '';
-            estado.productos.forEach(p => {
-                let sClass = p.stock <= 5 ? "bg-red-100 text-red-700 border-red-200" : (p.stock <= 15 ? "bg-amber-100 text-amber-700 border-amber-200" : "bg-slate-100 text-slate-700 border-slate-200");
+            
+            const filtrados = estado.productos.filter(p => p.nombre.toLowerCase().includes(estado.busquedaInventario));
+
+            if(filtrados.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-slate-400 font-medium">No se encontraron productos.</td></tr>';
+                return;
+            }
+
+            filtrados.forEach(p => {
+                let sClass = p.stock <= 5 ? "bg-red-100 text-red-700 border-red-200 shadow-[0_0_10px_rgba(239,68,68,0.3)]" : (p.stock <= 15 ? "bg-amber-100 text-amber-700 border-amber-200" : "bg-slate-100 text-slate-700 border-slate-200");
+                
+                // Cálculo de Margen Bruto: ((Precio - Costo) / Precio) * 100
+                let margen = ((p.precio - p.costo) / p.precio) * 100;
+                let margenClass = margen >= 50 ? "text-emerald-500 bg-emerald-50 border-emerald-100" : (margen >= 30 ? "text-blue-500 bg-blue-50 border-blue-100" : "text-amber-500 bg-amber-50 border-amber-100");
+
                 tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50 transition-colors">
-                        <td class="px-6 py-4 flex gap-3 items-center"><span class="text-3xl bg-white shadow-sm p-2 rounded-xl">${p.emoji}</span><span class="font-black text-slate-800 text-sm tracking-tight">${p.nombre}</span></td>
-                        <td class="px-6 py-4 text-center"><span class="px-4 py-1.5 rounded-lg font-black text-xs border ${sClass} shadow-sm">${p.stock}</span></td>
-                        <td class="px-6 py-4 text-right font-mono font-black text-slate-700 text-lg group">
+                    <tr class="hover:bg-slate-50/80 transition-colors">
+                        <td class="px-5 py-3 flex gap-3 items-center"><span class="text-3xl bg-white shadow-sm p-1.5 rounded-xl border border-slate-100">${p.emoji}</span><span class="font-black text-slate-800 text-sm tracking-tight">${p.nombre}</span></td>
+                        <td class="px-5 py-3 text-center"><span class="px-3 py-1 rounded-lg font-black text-xs border ${sClass}">${p.stock}</span></td>
+                        <td class="px-5 py-3 text-right font-mono font-bold text-slate-500 text-sm">$${p.costo.toFixed(2)}</td>
+                        <td class="px-5 py-3 text-right font-mono font-black text-slate-800 text-base group">
                             $${p.precio.toFixed(2)}
-                            <button onclick="abrirModalPrecio(${p.id})" class="ml-2 text-indigo-500 hover:text-indigo-700 opacity-0 group-hover:opacity-100 transition-opacity" title="Editar Precio">✏️</button>
+                            <button onclick="abrirModalEditarProducto(${p.id})" class="ml-2 text-indigo-500 hover:text-indigo-700 opacity-0 group-hover:opacity-100 transition-opacity bg-indigo-50 p-1.5 rounded-lg border border-indigo-100" title="Editar Costo/Precio">✏️</button>
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-5 py-3 text-center"><span class="text-[10px] font-black px-2 py-1 rounded-md border ${margenClass}">${margen.toFixed(1)}%</span></td>
+                        <td class="px-5 py-3">
                             <div class="flex gap-2 justify-center">
-                                <button onclick="surtirProducto(${p.id})" class="text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-600 hover:text-white uppercase tracking-wider font-black px-4 py-2.5 rounded-lg transition-all shadow-sm">Surtir +10</button>
-                                <button onclick="registrarMerma(${p.id})" class="text-[10px] bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-600 hover:text-white uppercase tracking-wider font-black px-4 py-2.5 rounded-lg transition-all shadow-sm">🗑️ Merma</button>
+                                <button onclick="abrirModalSurtir(${p.id})" class="text-[10px] bg-slate-800 text-white hover:bg-slate-700 uppercase tracking-wider font-black px-4 py-2 rounded-lg transition-all shadow-md">📦 Surtir</button>
+                                <button onclick="registrarMerma(${p.id})" class="text-[10px] bg-white text-rose-600 border border-rose-200 hover:bg-rose-50 uppercase tracking-wider font-black px-4 py-2 rounded-lg transition-all shadow-sm">🗑️ Merma</button>
                             </div>
                         </td>
                     </tr>
@@ -1148,67 +1221,130 @@
             });
         }
 
-        // Modal de Precios
-        function abrirModalPrecio(id) {
+        // Modal de Surtir Específico
+        function abrirModalSurtir(id) {
             const p = estado.productos.find(x => x.id === id);
             if(!p) return;
-            document.getElementById('input-precio-id').value = id;
-            document.getElementById('precio-prod-nombre').innerText = p.nombre;
+            document.getElementById('surtir-prod-id').value = id;
+            document.getElementById('surtir-prod-nombre').innerHTML = `${p.emoji} ${p.nombre} (Stock actual: ${p.stock})`;
+            document.getElementById('input-surtir-cant').value = 10;
+            document.getElementById('surtir-costo-uni').innerText = `$${p.costo.toFixed(2)}`;
+            calcularCostoSurtir();
+            document.getElementById('modal-surtir').classList.remove('hidden');
+        }
+
+        function calcularCostoSurtir() {
+            const id = parseInt(document.getElementById('surtir-prod-id').value);
+            const cant = parseInt(document.getElementById('input-surtir-cant').value) || 0;
+            const p = estado.productos.find(x => x.id === id);
+            if(p) {
+                const total = p.costo * cant;
+                document.getElementById('surtir-costo-total').innerText = `-$${total.toFixed(2)}`;
+            }
+        }
+
+        function cerrarModalSurtir() { document.getElementById('modal-surtir').classList.add('hidden'); }
+
+        function confirmarSurtir() {
+            const id = parseInt(document.getElementById('surtir-prod-id').value);
+            const cant = parseInt(document.getElementById('input-surtir-cant').value);
+            if(cant > 0) {
+                const p = estado.productos.find(x => x.id === id);
+                if(p) {
+                    let costoTotal = p.costo * cant;
+                    if(estado.caja < costoTotal) {
+                        playSound('error');
+                        mostrarNotificacion('Capital insuficiente para esta compra.', 'error');
+                        return;
+                    }
+                    p.stock += cant;
+                    estado.caja -= costoTotal; 
+                    estado.costoInventario += costoTotal;
+                    actualizarCajaUI(); 
+                    playSound('cash');
+                    mostrarNotificacion(`Compra de Insumos: +${cant} ${p.nombre} (-$${costoTotal.toFixed(2)})`, 'success');
+                    renderizarInventario();
+                    cerrarModalSurtir();
+                }
+            }
+        }
+
+        // Modal de Crear/Editar Producto
+        function abrirModalNuevoProducto() {
+            document.getElementById('input-prod-id').value = '';
+            document.getElementById('modal-producto-titulo').innerText = 'Crear Nuevo Producto';
+            document.getElementById('precio-prod-nombre').innerText = 'Agrega un nuevo ítem al catálogo.';
+            document.getElementById('div-nuevo-nombre').classList.remove('hidden');
+            
+            document.getElementById('input-nuevo-emoji').value = '🍔';
+            document.getElementById('input-nuevo-nombre').value = '';
+            document.getElementById('input-nuevo-costo').value = '';
+            document.getElementById('input-nuevo-precio').value = '';
+            
+            document.getElementById('modal-precio').classList.remove('hidden');
+        }
+
+        function abrirModalEditarProducto(id) {
+            const p = estado.productos.find(x => x.id === id);
+            if(!p) return;
+            document.getElementById('input-prod-id').value = id;
+            document.getElementById('modal-producto-titulo').innerText = 'Actualizar Finanzas';
+            document.getElementById('precio-prod-nombre').innerHTML = `${p.emoji} ${p.nombre}`;
+            document.getElementById('div-nuevo-nombre').classList.add('hidden');
+            
+            document.getElementById('input-nuevo-costo').value = p.costo;
             document.getElementById('input-nuevo-precio').value = p.precio;
             document.getElementById('modal-precio').classList.remove('hidden');
         }
-        function cerrarModalPrecio() { document.getElementById('modal-precio').classList.add('hidden'); }
-        function guardarNuevoPrecio() {
-            const id = parseInt(document.getElementById('input-precio-id').value);
-            const nuevo = parseFloat(document.getElementById('input-nuevo-precio').value);
-            if(!isNaN(nuevo) && nuevo > 0) {
-                const p = estado.productos.find(x => x.id === id);
-                if(p) {
-                    p.precio = nuevo;
-                    mostrarNotificacion(`Precio de ${p.nombre} actualizado a $${nuevo}`, 'success');
-                    cerrarModalPrecio();
-                    renderizarInventario();
-                    if(estado.vistaActual==='pos') renderizarMenuPOS(); // Act. menú si está activo en segundo plano
-                }
+        
+        function cerrarModalProducto() { document.getElementById('modal-precio').classList.add('hidden'); }
+        
+        function guardarProducto() {
+            const id = document.getElementById('input-prod-id').value;
+            const costo = parseFloat(document.getElementById('input-nuevo-costo').value);
+            const precio = parseFloat(document.getElementById('input-nuevo-precio').value);
+            
+            if(isNaN(costo) || isNaN(precio) || costo < 0 || precio <= 0) {
+                playSound('error'); mostrarNotificacion('Métricas financieras inválidas', 'error'); return;
+            }
+
+            if(id === '') {
+                // Modo Crear
+                const nombre = document.getElementById('input-nuevo-nombre').value.trim();
+                const emoji = document.getElementById('input-nuevo-emoji').value.trim() || '📦';
+                if(!nombre) { playSound('error'); mostrarNotificacion('Falta el nombre del producto', 'error'); return; }
+                
+                const nuevoId = Date.now();
+                estado.productos.push({
+                    id: nuevoId, nombre: nombre, categoria: "Bebida", // Por defecto, se podría añadir select en el futuro
+                    costo: costo, precio: precio, emoji: emoji, stock: 0, ventasHistoricas: 0
+                });
+                mostrarNotificacion(`Producto ${nombre} creado exitosamente.`, 'success');
             } else {
-                playSound('error');
-                mostrarNotificacion('Precio inválido', 'error');
+                // Modo Editar
+                const p = estado.productos.find(x => x.id === parseInt(id));
+                if(p) {
+                    p.costo = costo;
+                    p.precio = precio;
+                    mostrarNotificacion(`Métricas financieras de ${p.nombre} actualizadas.`, 'info');
+                }
             }
-        }
-
-        function surtirProducto(id) {
-            const p = estado.productos.find(x => x.id === id);
-            if(p) {
-                let costo = (p.precio * 0.4) * 10; 
-                p.stock += 10;
-                estado.caja -= costo; estado.costoInventario += costo;
-                actualizarCajaUI(); 
-                playSound('pop');
-                mostrarNotificacion(`Restock Exitoso: -$${costo.toFixed(2)} (Costo Mayorista)`, 'info');
-                renderizarInventario();
-            }
-        }
-
-        function surtirTodo() {
-            let costo = 0;
-            estado.productos.forEach(p => { p.stock += 10; costo += (p.precio * 0.4) * 10; });
-            estado.caja -= costo; estado.costoInventario += costo;
-            actualizarCajaUI(); 
-            playSound('cash');
-            mostrarNotificacion(`Supply Chain: Compra Masiva -$${costo.toFixed(2)}`, 'info');
+            
+            cerrarModalProducto();
             renderizarInventario();
+            if(estado.vistaActual==='pos') renderizarMenuPOS();
         }
 
         function registrarMerma(id) {
             const p = estado.productos.find(x => x.id === id);
             if(p && p.stock > 0) {
                 p.stock -= 1;
-                let valorPerdido = p.precio * 0.4;
+                let valorPerdido = p.costo; // La pérdida real es el costo, no el precio de venta
                 estado.caja -= valorPerdido; 
                 estado.costoMermas += valorPerdido;
                 actualizarCajaUI();
                 playSound('error');
-                mostrarNotificacion(`Merma operativa. Pérdida: -$${valorPerdido.toFixed(2)}`, 'error');
+                mostrarNotificacion(`Merma operativa. Pérdida al costo: -$${valorPerdido.toFixed(2)}`, 'error');
                 renderizarInventario();
             } else {
                 playSound('error');
