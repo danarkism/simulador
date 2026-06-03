@@ -85,6 +85,9 @@
             <button onclick="cambiarVista('finance')" id="nav-finance" class="nav-btn flex items-center p-3 rounded-lg hover:bg-slate-800 hover:text-white transition-all role-admin">
                 <span class="text-xl md:mr-3 text-center w-6">💰</span><span class="hidden md:block font-medium text-sm">Finanzas & Arqueo</span>
             </button>
+            <button onclick="cambiarVista('credits')" id="nav-credits" class="nav-btn flex items-center p-3 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
+                <span class="text-xl md:mr-3 text-center w-6">🎓</span><span class="hidden md:block font-medium text-sm">Créditos del Proyecto</span>
+            </button>
         </nav>
         
         <!-- Selector de Rol (RBAC) -->
@@ -432,6 +435,67 @@
             </div>
         </section>
 
+        <section id="view-credits" class="flex-1 overflow-y-auto p-6 view-section fade-in hidden bg-slate-50">
+            <div class="max-w-4xl mx-auto mt-4">
+                <div class="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden border border-slate-200">
+                    <!-- Cabecera Institucional -->
+                    <div class="bg-slate-900 p-10 text-center relative overflow-hidden">
+                        <div class="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMSIvPgo8L3N2Zz4=')]"></div>
+                        <h2 class="text-3xl md:text-4xl font-black text-white tracking-tight relative z-10 drop-shadow-md">Instituto Tecnológico de Campeche</h2>
+                        <p class="text-indigo-400 font-bold mt-3 text-xl relative z-10 tracking-wide">Ingeniería en Gestión Empresarial</p>
+                    </div>
+                    
+                    <div class="p-8 md:p-10">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+                            <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center items-center text-center">
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Materia</p>
+                                <p class="text-lg font-bold text-slate-800">El emprendedor y la innovación</p>
+                            </div>
+                            <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center items-center text-center relative overflow-hidden">
+                                <div class="absolute -right-4 -top-4 text-6xl opacity-5">👨‍🏫</div>
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Docente</p>
+                                <p class="text-lg font-bold text-slate-800">Pedro Carrillo Flores</p>
+                            </div>
+                        </div>
+
+                        <div class="text-center mb-8">
+                            <span class="inline-block bg-indigo-50 text-indigo-700 font-black px-6 py-2 rounded-full text-sm tracking-widest border border-indigo-200 shadow-sm">GRUPO: MG-6</span>
+                        </div>
+
+                        <div class="border-t-2 border-dashed border-slate-200 my-10"></div>
+
+                        <div class="text-center mb-8">
+                            <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest bg-white px-4 inline-block -mt-14">Equipo de Desarrollo</h3>
+                        </div>
+                        
+                        <!-- Integrantes -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div class="flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow group">
+                                <div class="w-14 h-14 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white rounded-full flex items-center justify-center font-black text-xl shadow-inner group-hover:scale-110 transition-transform">DC</div>
+                                <span class="font-bold text-slate-700 text-sm md:text-base">Daniel Isaias Can Lara</span>
+                            </div>
+                            <div class="flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow group">
+                                <div class="w-14 h-14 bg-gradient-to-br from-pink-500 to-pink-700 text-white rounded-full flex items-center justify-center font-black text-xl shadow-inner group-hover:scale-110 transition-transform">KP</div>
+                                <span class="font-bold text-slate-700 text-sm md:text-base">Karen Guadalupe Pacheco Queb</span>
+                            </div>
+                            <div class="flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow group">
+                                <div class="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-700 text-white rounded-full flex items-center justify-center font-black text-xl shadow-inner group-hover:scale-110 transition-transform">PV</div>
+                                <span class="font-bold text-slate-700 text-sm md:text-base">Paola Guadalupe Vazquez Lopez</span>
+                            </div>
+                            <div class="flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow group">
+                                <div class="w-14 h-14 bg-gradient-to-br from-amber-500 to-amber-700 text-white rounded-full flex items-center justify-center font-black text-xl shadow-inner group-hover:scale-110 transition-transform">JM</div>
+                                <span class="font-bold text-slate-700 text-sm md:text-base">Jose Antonio Mendoza Lopez</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-6 text-slate-400 text-xs font-medium">
+                    <p>Proyecto Final - Simulador de Negocios y ERP</p>
+                </div>
+            </div>
+        </section>
+
         <!-- MODAL RECIBO -->
         <div id="modal-recibo" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4 fade-in">
             <div class="bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] w-full max-w-sm overflow-hidden flex flex-col transform scale-100 transition-transform">
@@ -607,7 +671,7 @@
             document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById(`nav-${vista}`).classList.add('active');
 
-            const titulos = { pos: "Punto de Venta", dashboard: "Dashboard Analítico", inventory: "Supply Chain & Inventario", customers: "CRM & Lealtad", finance: "Auditoría Financiera", kitchen: "Kitchen Display (KDS)", marketing: "Promociones", history: "Libro Mayor" };
+            const titulos = { pos: "Punto de Venta", dashboard: "Dashboard Analítico", inventory: "Supply Chain & Inventario", customers: "CRM & Lealtad", finance: "Auditoría Financiera", kitchen: "Kitchen Display (KDS)", marketing: "Promociones", history: "Libro Mayor", credits: "Créditos Académicos" };
             document.getElementById('view-title').innerText = titulos[vista];
 
             if (vista === 'pos') { renderizarMenuPOS(); renderizarSelectClientes(); }
