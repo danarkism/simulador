@@ -3,54 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador Pro - Café Código</title>
+    <title>Simulador ERP - Café Código</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
         
-        /* Animaciones para las notificaciones y transiciones de vistas */
         .toast-enter { opacity: 0; transform: translateX(100%); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .toast-enter-active { opacity: 1; transform: translateX(0); }
-        
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Estilo para barra de progreso en dashboard */
         .progress-bar { transition: width 1s ease-out; }
-        
-        /* Ocultar scrollbar para un look más limpio pero permitir scroll */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        
-        /* Estilos para el Modal del Recibo */
         .modal-overlay { background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); }
         .receipt-stamp { border-top: 2px dashed #cbd5e1; border-bottom: 2px dashed #cbd5e1; }
+        
+        /* Estilos específicos para el monitor de cocina (KDS) */
+        .kds-card { transition: all 0.3s ease; }
+        .kds-card.urgent { border-color: #ef4444; background-color: #fef2f2; }
+        .kds-card.warning { border-color: #eab308; background-color: #fefce8; }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 h-screen w-full flex overflow-hidden">
     
-    <!-- Navegación Lateral (Sidebar) -->
+    <!-- NAVEGACIÓN LATERAL -->
     <aside class="w-20 md:w-64 bg-slate-900 text-slate-300 flex flex-col transition-all duration-300 flex-shrink-0 z-20">
         <div class="h-16 flex items-center justify-center md:justify-start md:px-6 bg-slate-950 border-b border-slate-800">
             <span class="text-2xl">☕</span>
             <span class="text-white font-bold text-lg ml-3 hidden md:block">Café Código</span>
         </div>
         
-        <nav class="flex-1 py-6 flex flex-col gap-2 px-3">
+        <nav class="flex-1 py-6 flex flex-col gap-2 px-3 overflow-y-auto">
             <button onclick="cambiarVista('pos')" id="nav-pos" class="nav-btn flex items-center p-3 rounded-lg hover:bg-slate-800 hover:text-white transition-colors bg-slate-800 text-white">
-                <span class="text-xl md:mr-3 text-center w-6">🛒</span>
-                <span class="hidden md:block font-medium">Punto de Venta</span>
+                <span class="text-xl md:mr-3 text-center w-6">🛒</span><span class="hidden md:block font-medium">Punto de Venta</span>
+            </button>
+            <button onclick="cambiarVista('kitchen')" id="nav-kitchen" class="nav-btn flex items-center p-3 rounded-lg hover:bg-slate-800 hover:text-white transition-colors">
+                <span class="text-xl md:mr-3 text-center w-6">🔥</span><span class="hidden md:block font-medium">Cocina (KDS)</span>
             </button>
             <button onclick="cambiarVista('dashboard')" id="nav-dashboard" class="nav-btn flex items-center p-3 rounded-lg hover:bg-slate-800 hover:text-white transition-colors">
-                <span class="text-xl md:mr-3 text-center w-6">📊</span>
-                <span class="hidden md:block font-medium">Dashboard</span>
+                <span class="text-xl md:mr-3 text-center w-6">📊</span><span class="hidden md:block font-medium">Dashboard</span>
             </button>
             <button onclick="cambiarVista('inventory')" id="nav-inventory" class="nav-btn flex items-center p-3 rounded-lg hover:bg-slate-800 hover:text-white transition-colors">
-                <span class="text-xl md:mr-3 text-center w-6">📦</span>
-                <span class="hidden md:block font-medium">Inventario</span>
+                <span class="text-xl md:mr-3 text-center w-6">📦</span><span class="hidden md:block font-medium">Inventario</span>
+            </button>
+            <button onclick="cambiarVista('customers')" id="nav-customers" class="nav-btn flex items-center p-3 rounded-lg hover:bg-slate-800 hover:text-white transition-colors">
+                <span class="text-xl md:mr-3 text-center w-6">👥</span><span class="hidden md:block font-medium">Clientes</span>
+            </button>
+            <button onclick="cambiarVista('finance')" id="nav-finance" class="nav-btn flex items-center p-3 rounded-lg hover:bg-slate-800 hover:text-white transition-colors">
+                <span class="text-xl md:mr-3 text-center w-6">💰</span><span class="hidden md:block font-medium">Finanzas</span>
             </button>
         </nav>
         
@@ -63,13 +66,12 @@
         </div>
     </aside>
 
-    <!-- Contenedor Principal (Donde cambian las vistas) -->
+    <!-- CONTENEDOR PRINCIPAL -->
     <main class="flex-1 flex flex-col h-full overflow-hidden relative w-full">
         
-        <!-- Header Global superior -->
+        <!-- Header Global -->
         <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10 flex-shrink-0">
             <h2 id="view-title" class="text-xl font-semibold text-slate-700">Punto de Venta</h2>
-            
             <div class="flex items-center gap-4">
                 <div class="flex flex-col items-end">
                     <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Caja General</span>
@@ -80,99 +82,113 @@
 
         <!-- VISTA 1: PUNTO DE VENTA (POS) -->
         <section id="view-pos" class="flex-1 overflow-hidden flex flex-col md:flex-row p-4 gap-4 view-section fade-in">
-            <!-- Menú de Productos -->
+            <!-- Menú -->
             <div class="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden h-full">
                 <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
                     <h3 class="font-semibold text-slate-700">Menú</h3>
                     <div class="flex gap-2" id="category-filters">
                         <button onclick="filtrarCategoria('Todos')" class="filter-btn px-3 py-1 text-xs font-medium bg-slate-800 text-white rounded-md transition-colors" data-cat="Todos">Todos</button>
-                        <button onclick="filtrarCategoria('Bebida')" class="filter-btn px-3 py-1 text-xs font-medium bg-slate-200 text-slate-600 hover:bg-slate-300 rounded-md transition-colors" data-cat="Bebida">Bebidas</button>
-                        <button onclick="filtrarCategoria('Postre')" class="filter-btn px-3 py-1 text-xs font-medium bg-slate-200 text-slate-600 hover:bg-slate-300 rounded-md transition-colors" data-cat="Postre">Postres</button>
+                        <button onclick="filtrarCategoria('Bebida')" class="filter-btn px-3 py-1 text-xs font-medium bg-slate-200 text-slate-600 rounded-md transition-colors" data-cat="Bebida">Bebidas</button>
+                        <button onclick="filtrarCategoria('Postre')" class="filter-btn px-3 py-1 text-xs font-medium bg-slate-200 text-slate-600 rounded-md transition-colors" data-cat="Postre">Postres</button>
                     </div>
                 </div>
                 <div class="flex-1 overflow-y-auto p-4">
-                    <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="pos-grid">
-                        <!-- Botones generados por JS -->
-                    </div>
+                    <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="pos-grid"></div>
                 </div>
             </div>
 
-            <!-- Ticket / Carrito -->
+            <!-- Carrito -->
             <div class="w-full md:w-80 lg:w-96 flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden h-[50vh] md:h-full flex-shrink-0">
-                <div class="p-4 border-b border-slate-100 bg-slate-50">
-                    <h3 class="font-semibold text-slate-700 flex items-center justify-between">
-                        <span>Orden Actual</span>
-                        <span id="cart-count" class="bg-amber-100 text-amber-800 text-xs py-1 px-2 rounded-full font-bold">0 items</span>
-                    </h3>
+                <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                    <h3 class="font-semibold text-slate-700">Orden Actual</h3>
+                    <span id="cart-count" class="bg-amber-100 text-amber-800 text-xs py-1 px-2 rounded-full font-bold">0 items</span>
                 </div>
                 
                 <div class="flex-1 overflow-y-auto p-3 flex flex-col gap-2" id="cart-items">
-                    <!-- Items del carrito -->
                     <div class="h-full flex flex-col items-center justify-center text-slate-400 opacity-70">
-                        <span class="text-4xl mb-2">🍽️</span>
-                        <p class="text-sm">Orden vacía</p>
+                        <span class="text-4xl mb-2">🍽️</span><p class="text-sm">Orden vacía</p>
                     </div>
                 </div>
 
                 <div class="p-4 border-t border-slate-100 bg-slate-50">
-                    <!-- Agregar Descuento -->
-                    <div class="flex gap-2 mb-3">
-                        <input type="number" id="input-desc" placeholder="% Desc" min="0" max="100" class="w-full text-sm p-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                        <button onclick="aplicarDescuento()" class="bg-slate-800 text-white px-3 py-2 rounded-lg text-sm hover:bg-slate-700 transition-colors">Aplicar</button>
+                    <!-- Cliente y Descuento -->
+                    <div class="mb-3">
+                        <select id="select-cliente" onchange="asignarCliente(this.value)" class="w-full text-sm p-2 border border-slate-200 rounded-lg mb-2">
+                            <option value="">👤 Público en General</option>
+                        </select>
+                        <div class="flex gap-2">
+                            <input type="number" id="input-desc" placeholder="% Desc" min="0" max="100" class="w-full text-sm p-2 border border-slate-200 rounded-lg">
+                            <button onclick="aplicarDescuento()" class="bg-slate-800 text-white px-3 py-2 rounded-lg text-sm">Aplicar</button>
+                        </div>
                     </div>
 
-                    <div class="flex justify-between text-sm mb-1 text-slate-500">
-                        <span>Subtotal:</span>
-                        <span id="cart-subtotal">$0.00</span>
+                    <!-- Propinas -->
+                    <div class="mb-3">
+                        <p class="text-xs text-slate-500 mb-1">Propina:</p>
+                        <div class="grid grid-cols-4 gap-1">
+                            <button onclick="aplicarPropina(0)" class="tip-btn border border-slate-200 bg-white text-slate-600 rounded py-1 text-xs font-medium" data-tip="0">0%</button>
+                            <button onclick="aplicarPropina(10)" class="tip-btn border border-slate-200 bg-white text-slate-600 rounded py-1 text-xs font-medium" data-tip="10">10%</button>
+                            <button onclick="aplicarPropina(15)" class="tip-btn border border-slate-200 bg-white text-slate-600 rounded py-1 text-xs font-medium" data-tip="15">15%</button>
+                            <button onclick="aplicarPropina(20)" class="tip-btn border border-slate-200 bg-white text-slate-600 rounded py-1 text-xs font-medium" data-tip="20">20%</button>
+                        </div>
                     </div>
-                    <div class="flex justify-between text-sm mb-1 text-slate-500 hidden" id="cart-desc-row">
-                        <span>Descuento:</span>
-                        <span id="cart-desc" class="text-red-500">-$0.00</span>
-                    </div>
-                    <div class="flex justify-between text-sm mb-3 text-slate-500">
-                        <span>IVA (16%):</span>
-                        <span id="cart-tax">$0.00</span>
-                    </div>
-                    <div class="flex justify-between text-lg font-bold mb-4 text-slate-800 border-t border-slate-200 pt-2">
-                        <span>Total:</span>
-                        <span id="cart-total" class="text-emerald-600">$0.00</span>
+
+                    <!-- Totales -->
+                    <div class="text-sm text-slate-500 space-y-1 mb-3">
+                        <div class="flex justify-between"><span>Subtotal:</span><span id="cart-subtotal">$0.00</span></div>
+                        <div class="flex justify-between hidden text-red-500" id="cart-desc-row"><span>Descuento:</span><span id="cart-desc">-$0.00</span></div>
+                        <div class="flex justify-between"><span>IVA (16%):</span><span id="cart-tax">$0.00</span></div>
+                        <div class="flex justify-between hidden text-blue-500" id="cart-tip-row"><span>Propina:</span><span id="cart-tip">+$0.00</span></div>
                     </div>
                     
-                    <!-- Métodos de Pago -->
+                    <div class="flex justify-between text-lg font-bold mb-4 text-slate-800 border-t border-slate-200 pt-2">
+                        <span>Total:</span><span id="cart-total" class="text-emerald-600">$0.00</span>
+                    </div>
+                    
                     <div class="grid grid-cols-2 gap-2 mb-4">
-                        <button onclick="seleccionarPago('efectivo')" id="btn-pago-efectivo" class="py-2 border-2 border-emerald-500 bg-emerald-50 text-emerald-700 rounded-lg text-sm font-semibold flex justify-center items-center gap-1 transition-colors">💵 Efectivo</button>
-                        <button onclick="seleccionarPago('tarjeta')" id="btn-pago-tarjeta" class="py-2 border-2 border-slate-200 bg-white text-slate-500 hover:bg-slate-50 rounded-lg text-sm font-semibold flex justify-center items-center gap-1 transition-colors">💳 Tarjeta</button>
+                        <button onclick="seleccionarPago('efectivo')" id="btn-pago-efectivo" class="py-2 border-2 border-emerald-500 bg-emerald-50 text-emerald-700 rounded-lg text-sm font-semibold">💵 Efectivo</button>
+                        <button onclick="seleccionarPago('tarjeta')" id="btn-pago-tarjeta" class="py-2 border-2 border-slate-200 bg-white text-slate-500 rounded-lg text-sm font-semibold">💳 Tarjeta</button>
                     </div>
 
-                    <button onclick="procesarPago()" id="btn-pay" disabled class="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold py-3 rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2">
-                        <span>💸</span> Cobrar Orden
-                    </button>
-                    <button onclick="limpiarCarrito()" id="btn-cancel" disabled class="w-full mt-2 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg disabled:opacity-50 disabled:hover:bg-transparent transition-colors">
-                        Cancelar Orden
+                    <button onclick="procesarPago()" id="btn-pay" disabled class="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold py-3 rounded-lg shadow-sm">
+                        💸 Cobrar Orden
                     </button>
                 </div>
             </div>
         </section>
 
-        <!-- VISTA 2: DASHBOARD -->
+        <!-- VISTA 2: COCINA (KDS) -->
+        <section id="view-kitchen" class="flex-1 overflow-y-auto p-6 view-section fade-in hidden bg-slate-900 text-slate-200">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-bold text-white text-xl">Monitor de Comandas (KDS)</h3>
+                <div class="flex gap-4 text-sm font-medium">
+                    <span class="flex items-center gap-1"><div class="w-3 h-3 bg-emerald-500 rounded-full"></div> A tiempo</span>
+                    <span class="flex items-center gap-1"><div class="w-3 h-3 bg-yellow-500 rounded-full"></div> +3 min</span>
+                    <span class="flex items-center gap-1"><div class="w-3 h-3 bg-red-500 rounded-full"></div> +5 min</span>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="kds-grid">
+                <!-- Tarjetas de cocina -->
+            </div>
+        </section>
+
+        <!-- VISTA 3: DASHBOARD -->
         <section id="view-dashboard" class="flex-1 overflow-y-auto p-6 view-section fade-in hidden bg-slate-50">
             <div class="max-w-6xl mx-auto gap-6 flex flex-col">
-                <!-- Tarjetas de métricas -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                        <h3 class="text-slate-500 text-sm font-medium mb-1">Ingresos Totales</h3>
+                        <h3 class="text-slate-500 text-sm font-medium">Ventas Totales (Brutas)</h3>
                         <p id="dash-ingresos" class="text-3xl font-bold text-emerald-600">$0.00</p>
                     </div>
                     <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                        <h3 class="text-slate-500 text-sm font-medium mb-1">Órdenes Completadas</h3>
+                        <h3 class="text-slate-500 text-sm font-medium">Órdenes Completadas</h3>
                         <p id="dash-ordenes" class="text-3xl font-bold text-blue-600">0</p>
                     </div>
                     <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                        <h3 class="text-slate-500 text-sm font-medium mb-1">Ticket Promedio</h3>
+                        <h3 class="text-slate-500 text-sm font-medium">Ticket Promedio</h3>
                         <p id="dash-promedio" class="text-3xl font-bold text-amber-600">$0.00</p>
                     </div>
                 </div>
-                <!-- Gráficos y Tablas -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 lg:col-span-1">
                         <h3 class="font-bold text-slate-700 mb-4">Top Productos</h3>
@@ -197,40 +213,135 @@
             </div>
         </section>
 
-        <!-- VISTA 3: INVENTARIO -->
+        <!-- VISTA 4: INVENTARIO -->
         <section id="view-inventory" class="flex-1 overflow-y-auto p-6 view-section fade-in hidden bg-slate-50">
-            <div class="max-w-6xl mx-auto bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-                    <h3 class="font-bold text-slate-700">Control de Existencias</h3>
-                    <button onclick="surtirTodo()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
-                        Surtir +10 a Todo
-                    </button>
+            <div class="max-w-6xl mx-auto flex flex-col gap-6">
+                <!-- Crear Producto -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-slate-700 mb-4">Crear Nuevo Producto</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                        <div class="md:col-span-2">
+                            <label class="text-xs text-slate-500 mb-1 block">Nombre del Producto</label>
+                            <input type="text" id="nuevo-prod-nombre" class="w-full p-2 border border-slate-200 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-500 mb-1 block">Precio (MXN)</label>
+                            <input type="number" id="nuevo-prod-precio" class="w-full p-2 border border-slate-200 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-500 mb-1 block">Categoría</label>
+                            <select id="nuevo-prod-cat" class="w-full p-2 border border-slate-200 rounded-lg bg-white">
+                                <option value="Bebida">Bebida</option>
+                                <option value="Postre">Postre</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-500 mb-1 block">Emoji</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="nuevo-prod-emoji" placeholder="☕" class="w-full p-2 border border-slate-200 rounded-lg">
+                                <button onclick="crearProducto()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700">Crear</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="overflow-x-auto">
+
+                <!-- Tabla Inventario -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                        <h3 class="font-bold text-slate-700">Control de Existencias</h3>
+                        <button onclick="surtirTodo()" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium">Surtir +10 a Todo</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 text-slate-500">
+                                <tr>
+                                    <th class="px-6 py-3 font-medium">Producto</th>
+                                    <th class="px-6 py-3 font-medium">Categoría</th>
+                                    <th class="px-6 py-3 font-medium text-right">Precio Venta</th>
+                                    <th class="px-6 py-3 font-medium text-center">Stock</th>
+                                    <th class="px-6 py-3 font-medium text-center">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventory-table" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VISTA 5: CLIENTES (CRM) -->
+        <section id="view-customers" class="flex-1 overflow-y-auto p-6 view-section fade-in hidden bg-slate-50">
+            <div class="max-w-4xl mx-auto flex flex-col gap-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-slate-700 mb-4">Registrar Cliente</h3>
+                    <div class="flex gap-4">
+                        <input type="text" id="nuevo-cliente-nombre" placeholder="Nombre completo" class="flex-1 p-2 border border-slate-200 rounded-lg">
+                        <input type="tel" id="nuevo-cliente-tel" placeholder="Teléfono" class="flex-1 p-2 border border-slate-200 rounded-lg">
+                        <button onclick="agregarCliente()" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-medium">Guardar</button>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                     <table class="w-full text-left text-sm">
                         <thead class="bg-slate-50 text-slate-500">
                             <tr>
-                                <th class="px-6 py-3 font-medium">Producto</th>
-                                <th class="px-6 py-3 font-medium">Categoría</th>
-                                <th class="px-6 py-3 font-medium text-right">Precio</th>
-                                <th class="px-6 py-3 font-medium text-center">Stock Actual</th>
-                                <th class="px-6 py-3 font-medium text-center">Acción</th>
+                                <th class="px-6 py-3">Nombre</th>
+                                <th class="px-6 py-3">Teléfono</th>
+                                <th class="px-6 py-3 text-center">Puntos Acumulados</th>
                             </tr>
                         </thead>
-                        <tbody id="inventory-table" class="divide-y divide-slate-100">
-                            <!-- Items generados por JS -->
-                        </tbody>
+                        <tbody id="customers-table" class="divide-y divide-slate-100"></tbody>
                     </table>
                 </div>
             </div>
         </section>
 
-        <!-- Modal de Recibo (Oculto por defecto) -->
+        <!-- VISTA 6: FINANZAS Y CORTE DE CAJA -->
+        <section id="view-finance" class="flex-1 overflow-y-auto p-6 view-section fade-in hidden bg-slate-50">
+            <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Registro de Gastos -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-4">
+                    <h3 class="font-bold text-slate-700">Registrar Gasto Operativo</h3>
+                    <div class="flex flex-col gap-3">
+                        <div>
+                            <label class="text-xs text-slate-500">Concepto (Ej. Pago Luz, Sueldo)</label>
+                            <input type="text" id="gasto-concepto" class="w-full p-2 border border-slate-200 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-500">Monto (MXN)</label>
+                            <input type="number" id="gasto-monto" class="w-full p-2 border border-slate-200 rounded-lg">
+                        </div>
+                        <button onclick="registrarGasto()" class="bg-red-500 text-white py-2 rounded-lg font-medium mt-2">Deducir de Caja</button>
+                    </div>
+                    <div class="mt-4 border-t border-slate-100 pt-4">
+                        <h4 class="text-sm font-semibold text-slate-600 mb-2">Historial de Gastos</h4>
+                        <ul id="lista-gastos" class="text-sm space-y-2 text-slate-500"></ul>
+                    </div>
+                </div>
+
+                <!-- Corte de Caja -->
+                <div class="bg-slate-900 text-white p-6 rounded-xl shadow-lg border border-slate-800 flex flex-col">
+                    <h3 class="font-bold text-xl mb-4 border-b border-slate-700 pb-2">🧾 Corte de Caja (Z-Report)</h3>
+                    <div class="space-y-3 text-sm flex-1">
+                        <div class="flex justify-between text-slate-300"><span>Ventas Brutas:</span><span id="fin-ventas">$0.00</span></div>
+                        <div class="flex justify-between text-blue-400"><span>Propinas Recaudadas:</span><span id="fin-propinas">+$0.00</span></div>
+                        <div class="flex justify-between text-red-400"><span>Costo de Inventario (Surtido):</span><span id="fin-costo">-$0.00</span></div>
+                        <div class="flex justify-between text-red-400"><span>Gastos Operativos:</span><span id="fin-gastos">-$0.00</span></div>
+                        <div class="border-t border-slate-700 my-3"></div>
+                        <div class="flex justify-between text-lg font-bold"><span>Utilidad Neta:</span><span id="fin-neta" class="text-emerald-400">$0.00</span></div>
+                        <div class="flex justify-between text-sm text-slate-400 mt-1"><span>Dinero actual en Caja:</span><span id="fin-caja">$0.00</span></div>
+                    </div>
+                    <button onclick="descargarReporte()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg mt-6 flex justify-center items-center gap-2">
+                        📥 Descargar Reporte (.txt)
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Modal Recibo -->
         <div id="modal-recibo" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4 fade-in">
             <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col">
                 <div class="bg-slate-900 p-4 text-center text-white relative">
                     <h2 class="text-xl font-bold">Café Código</h2>
-                    <p class="text-xs text-slate-400">¡Gracias por su compra!</p>
                     <button onclick="cerrarRecibo()" class="absolute top-2 right-3 text-slate-400 hover:text-white text-xl">&times;</button>
                 </div>
                 <div class="p-6 flex flex-col gap-4 bg-slate-50">
@@ -239,90 +350,97 @@
                         <p id="recibo-total" class="text-3xl font-bold text-slate-800">$0.00</p>
                         <p id="recibo-metodo" class="text-xs font-semibold text-emerald-600 mt-1 uppercase">EFECTIVO</p>
                     </div>
-                    <div id="recibo-items" class="text-sm text-slate-600 flex flex-col gap-2 max-h-40 overflow-y-auto">
-                        <!-- Items del recibo -->
-                    </div>
+                    <div id="recibo-items" class="text-sm text-slate-600 flex flex-col gap-2 max-h-40 overflow-y-auto"></div>
                 </div>
                 <div class="p-4 bg-white border-t border-slate-200">
-                    <button onclick="cerrarRecibo()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-lg transition-colors">
-                        Cerrar y Continuar
-                    </button>
+                    <button onclick="window.print()" class="w-full bg-blue-600 text-white font-bold py-2 rounded-lg mb-2">🖨️ Imprimir</button>
+                    <button onclick="cerrarRecibo()" class="w-full bg-slate-100 text-slate-700 font-bold py-2 rounded-lg">Cerrar</button>
                 </div>
             </div>
         </div>
 
     </main>
 
-    <!-- Contenedor para Notificaciones -->
+    <!-- Toasts -->
     <div id="toast-container" class="fixed top-4 right-4 flex flex-col gap-2 z-50 pointer-events-none"></div>
 
     <script>
-        // --- 1. BASE DE DATOS Y ESTADO GLOBAL ---
+        // --- 1. ESTADO GLOBAL ---
         const estado = {
             vistaActual: 'pos',
-            caja: 0,
-            ordenActual: [],
-            impuestoIVA: 0.16, // 16% de IVA
-            historialVentas: [], // Para guardar cada ticket
-            filtroCategoria: 'Todos', // Categoría seleccionada
-            descuentoPorcentaje: 0, // Descuento aplicado
-            metodoPago: 'efectivo', // Método de pago seleccionado
+            caja: 0, // Dinero líquido
             
-            // Inventario expandido (Precios actualizados a Pesos Mexicanos)
+            // Finanzas
+            ventasBrutas: 0,
+            propinasTotales: 0,
+            costoInventario: 0,
+            gastosOperativos: 0,
+            historialGastos: [],
+
+            // POS
+            ordenActual: [],
+            impuestoIVA: 0.16,
+            historialVentas: [],
+            filtroCategoria: 'Todos',
+            descuentoPorcentaje: 0,
+            propinaPorcentaje: 0,
+            metodoPago: 'efectivo',
+            
+            // CRM
+            clienteActual: null,
+            clientes: [
+                { id: 1, nombre: "Juan Pérez", telefono: "555-0123", puntos: 150 },
+                { id: 2, nombre: "María García", telefono: "555-0456", puntos: 45 }
+            ],
+            
+            // Cocina
+            ordenesCocina: [],
+
+            // Inventario
             productos: [
-                { id: 1, nombre: "Café Americano", categoria: "Bebida", precio: 45.00, emoji: "☕", color: "bg-amber-100 text-amber-800 border-amber-200", stock: 50, ventasHistoricas: 0 },
-                { id: 2, nombre: "Capuchino", categoria: "Bebida", precio: 65.00, emoji: "☕", color: "bg-amber-100 text-amber-800 border-amber-200", stock: 30, ventasHistoricas: 0 },
-                { id: 3, nombre: "Latte Helado", categoria: "Bebida", precio: 75.00, emoji: "🧊", color: "bg-cyan-100 text-cyan-800 border-cyan-200", stock: 25, ventasHistoricas: 0 },
-                { id: 4, nombre: "Matcha Latte", categoria: "Bebida", precio: 85.00, emoji: "🍵", color: "bg-green-100 text-green-800 border-green-200", stock: 20, ventasHistoricas: 0 },
-                { id: 5, nombre: "Croissant Mantequilla", categoria: "Postre", precio: 40.00, emoji: "🥐", color: "bg-orange-100 text-orange-800 border-orange-200", stock: 15, ventasHistoricas: 0 },
-                { id: 6, nombre: "Cheesecake", categoria: "Postre", precio: 70.00, emoji: "🍰", color: "bg-red-100 text-red-800 border-red-200", stock: 10, ventasHistoricas: 0 },
-                { id: 7, nombre: "Galleta Choco", categoria: "Postre", precio: 25.00, emoji: "🍪", color: "bg-yellow-100 text-yellow-800 border-yellow-200", stock: 40, ventasHistoricas: 0 },
-                { id: 8, nombre: "Muffin Arándanos", categoria: "Postre", precio: 55.00, emoji: "🧁", color: "bg-purple-100 text-purple-800 border-purple-200", stock: 12, ventasHistoricas: 0 }
+                { id: 1, nombre: "Café Americano", categoria: "Bebida", precio: 45.00, emoji: "☕", stock: 50, ventasHistoricas: 0 },
+                { id: 2, nombre: "Capuchino", categoria: "Bebida", precio: 65.00, emoji: "☕", stock: 30, ventasHistoricas: 0 },
+                { id: 3, nombre: "Latte Helado", categoria: "Bebida", precio: 75.00, emoji: "🧊", stock: 25, ventasHistoricas: 0 },
+                { id: 4, nombre: "Croissant", categoria: "Postre", precio: 40.00, emoji: "🥐", stock: 15, ventasHistoricas: 0 },
+                { id: 5, nombre: "Cheesecake", categoria: "Postre", precio: 70.00, emoji: "🍰", stock: 10, ventasHistoricas: 0 }
             ]
         };
 
-        // --- 2. NAVEGACIÓN ENTRE VISTAS ---
+        const colores = ["bg-amber-100 text-amber-800", "bg-cyan-100 text-cyan-800", "bg-orange-100 text-orange-800", "bg-pink-100 text-pink-800"];
+
+        // --- 2. NAVEGACIÓN ---
         function cambiarVista(vista) {
             estado.vistaActual = vista;
-            
-            // Ocultar todas las secciones
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
-            
-            // Mostrar la seleccionada
             document.getElementById(`view-${vista}`).classList.remove('hidden');
             
-            // Actualizar diseño de botones en sidebar
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 btn.classList.remove('bg-slate-800', 'text-white');
                 btn.classList.add('text-slate-300');
             });
-            const activeBtn = document.getElementById(`nav-${vista}`);
-            activeBtn.classList.add('bg-slate-800', 'text-white');
-            activeBtn.classList.remove('text-slate-300');
+            document.getElementById(`nav-${vista}`).classList.add('bg-slate-800', 'text-white');
 
-            // Actualizar Título
-            const titulos = { pos: "Punto de Venta", dashboard: "Panel de Control", inventory: "Gestión de Inventario" };
+            const titulos = { pos: "Punto de Venta", dashboard: "Panel de Control", inventory: "Gestión de Inventario", customers: "Programa de Lealtad", finance: "Finanzas y Contabilidad", kitchen: "Monitor de Cocina" };
             document.getElementById('view-title').innerText = titulos[vista];
 
-            // Renderizar datos específicos de la vista al entrar
-            if (vista === 'pos') renderizarMenuPOS();
+            if (vista === 'pos') { renderizarMenuPOS(); actualizarSelectClientes(); }
             if (vista === 'dashboard') renderizarDashboard();
             if (vista === 'inventory') renderizarInventario();
+            if (vista === 'customers') renderizarClientes();
+            if (vista === 'finance') renderizarFinanzas();
+            if (vista === 'kitchen') renderizarCocina();
         }
 
-        // --- LÓGICA DEL MÓDULO PUNTO DE VENTA (POS) ---
+        function actualizarCaja() {
+            document.getElementById('header-caja').innerText = `$${estado.caja.toFixed(2)}`;
+        }
+
+        // --- 3. PUNTO DE VENTA (POS) ---
         function filtrarCategoria(categoria) {
             estado.filtroCategoria = categoria;
-            
-            // Actualizar estilos de los botones
             document.querySelectorAll('.filter-btn').forEach(btn => {
-                if(btn.dataset.cat === categoria) {
-                    btn.classList.replace('bg-slate-200', 'bg-slate-800');
-                    btn.classList.replace('text-slate-600', 'text-white');
-                } else {
-                    btn.classList.replace('bg-slate-800', 'bg-slate-200');
-                    btn.classList.replace('text-white', 'text-slate-600');
-                }
+                if(btn.dataset.cat === categoria) btn.className = "filter-btn px-3 py-1 text-xs font-medium bg-slate-800 text-white rounded-md transition-colors";
+                else btn.className = "filter-btn px-3 py-1 text-xs font-medium bg-slate-200 text-slate-600 rounded-md transition-colors";
             });
             renderizarMenuPOS();
         }
@@ -330,419 +448,369 @@
         function renderizarMenuPOS() {
             const grid = document.getElementById('pos-grid');
             grid.innerHTML = '';
+            const filtrados = estado.productos.filter(p => estado.filtroCategoria === 'Todos' || p.categoria === estado.filtroCategoria);
 
-            // Filtrar productos según la categoría seleccionada
-            const productosFiltrados = estado.productos.filter(prod => 
-                estado.filtroCategoria === 'Todos' || prod.categoria === estado.filtroCategoria
-            );
-
-            if (productosFiltrados.length === 0) {
-                grid.innerHTML = '<div class="col-span-full text-center text-slate-400 py-8">No hay productos en esta categoría.</div>';
-                return;
-            }
-
-            // Generar botones del menú correctamente
-            productosFiltrados.forEach(prod => {
-                const btn = document.createElement('button');
-                
-                // Si no hay stock, el botón se ve deshabilitado
+            filtrados.forEach((prod, index) => {
+                const color = colores[index % colores.length];
                 const sinStock = prod.stock <= 0;
-                const baseClasses = "flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all text-left relative overflow-hidden";
                 
-                if (sinStock) {
-                    btn.className = `${baseClasses} bg-slate-100 border-slate-200 opacity-60 cursor-not-allowed`;
-                    btn.disabled = true;
-                } else {
-                    btn.className = `${baseClasses} ${prod.color} hover:shadow-md hover:-translate-y-1`;
-                    btn.onclick = () => agregarAlCarrito(prod.id);
-                }
+                const btn = document.createElement('button');
+                btn.className = `flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all relative overflow-hidden ${sinStock ? 'bg-slate-100 border-slate-200 opacity-60 cursor-not-allowed' : color + ' hover:-translate-y-1'}`;
+                btn.disabled = sinStock;
+                if(!sinStock) btn.onclick = () => agregarAlCarrito(prod.id);
 
                 btn.innerHTML = `
                     <div class="text-4xl mb-2">${prod.emoji}</div>
-                    <div class="font-bold text-center leading-tight mb-1">${prod.nombre}</div>
+                    <div class="font-bold text-center leading-tight mb-1 text-sm">${prod.nombre}</div>
                     <div class="font-semibold opacity-90 text-sm">$${prod.precio.toFixed(2)}</div>
-                    <div class="text-xs mt-2 font-medium ${sinStock ? 'text-red-500' : 'text-slate-500'}">
-                        ${sinStock ? 'Agotado' : 'Stock: ' + prod.stock}
-                    </div>
+                    <div class="text-xs mt-1 font-medium ${sinStock ? 'text-red-500' : 'text-slate-600'}">${sinStock ? 'Agotado' : 'Stock: ' + prod.stock}</div>
                 `;
-                
                 grid.appendChild(btn);
             });
         }
 
-        function agregarAlCarrito(idProducto) {
-            const productoDb = estado.productos.find(p => p.id === idProducto);
-            const itemEnCarrito = estado.ordenActual.find(i => i.id === idProducto);
+        function agregarAlCarrito(id) {
+            const prod = estado.productos.find(p => p.id === id);
+            const item = estado.ordenActual.find(i => i.id === id);
             
-            // Validar stock disponible
-            const cantActual = itemEnCarrito ? itemEnCarrito.cantidad : 0;
-            if (cantActual >= productoDb.stock) {
-                mostrarNotificacion(`Sin stock suficiente de ${productoDb.nombre}`, 'error');
-                return;
-            }
-
-            if (itemEnCarrito) {
-                itemEnCarrito.cantidad++;
-            } else {
-                estado.ordenActual.push({
-                    id: productoDb.id,
-                    nombre: productoDb.nombre,
-                    precio: productoDb.precio,
-                    emoji: productoDb.emoji,
-                    cantidad: 1
-                });
-            }
+            if (item && item.cantidad >= prod.stock) { mostrarNotificacion('Sin stock', 'error'); return; }
+            if (item) item.cantidad++;
+            else estado.ordenActual.push({ ...prod, cantidad: 1 });
             actualizarCarritoDOM();
         }
 
-        function restarDelCarrito(idProducto) {
-            const index = estado.ordenActual.findIndex(i => i.id === idProducto);
+        function restarDelCarrito(id) {
+            const index = estado.ordenActual.findIndex(i => i.id === id);
             if (index > -1) {
-                if (estado.ordenActual[index].cantidad > 1) {
-                    estado.ordenActual[index].cantidad--;
-                } else {
-                    estado.ordenActual.splice(index, 1);
-                }
+                if (estado.ordenActual[index].cantidad > 1) estado.ordenActual[index].cantidad--;
+                else estado.ordenActual.splice(index, 1);
                 actualizarCarritoDOM();
             }
         }
 
-        function actualizarCarritoDOM() {
-            const container = document.getElementById('cart-items');
-            container.innerHTML = '';
-            
-            let subtotal = 0;
-            let totalItems = 0;
-
-            if (estado.ordenActual.length === 0) {
-                container.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-slate-400 opacity-70"><span class="text-4xl mb-2">🍽️</span><p class="text-sm">Orden vacía</p></div>`;
-                document.getElementById('btn-pay').disabled = true;
-                document.getElementById('btn-cancel').disabled = true;
-            } else {
-                document.getElementById('btn-pay').disabled = false;
-                document.getElementById('btn-cancel').disabled = false;
-
-                estado.ordenActual.forEach(item => {
-                    subtotal += item.precio * item.cantidad;
-                    totalItems += item.cantidad;
-                    
-                    const div = document.createElement('div');
-                    div.className = "flex justify-between items-center bg-white border border-slate-100 rounded-lg p-2 shadow-sm text-sm";
-                    div.innerHTML = `
-                        <div class="flex items-center gap-2 overflow-hidden">
-                            <span class="text-lg">${item.emoji}</span>
-                            <div class="truncate">
-                                <p class="font-semibold truncate">${item.nombre}</p>
-                                <p class="text-xs text-slate-500">$${item.precio.toFixed(2)}</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2 shrink-0">
-                            <button onclick="restarDelCarrito(${item.id})" class="w-6 h-6 flex items-center justify-center rounded bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold">-</button>
-                            <span class="w-4 text-center font-bold">${item.cantidad}</span>
-                            <button onclick="agregarAlCarrito(${item.id})" class="w-6 h-6 flex items-center justify-center rounded bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold">+</button>
-                        </div>
-                    `;
-                    container.appendChild(div);
-                });
-            }
-
-            // Cálculos Financieros
-            let descuentoValor = 0;
-            if (estado.descuentoPorcentaje > 0) {
-                descuentoValor = subtotal * (estado.descuentoPorcentaje / 100);
-            }
-            
-            const subtotalConDescuento = subtotal - descuentoValor;
-            const iva = subtotalConDescuento * estado.impuestoIVA;
-            const total = subtotalConDescuento + iva;
-
-            // Actualizar textos
-            document.getElementById('cart-count').innerText = `${totalItems} items`;
-            document.getElementById('cart-subtotal').innerText = `$${subtotal.toFixed(2)}`;
-            
-            // Manejo visual del descuento
-            const descRow = document.getElementById('cart-desc-row');
-            if (descuentoValor > 0) {
-                descRow.classList.remove('hidden');
-                document.getElementById('cart-desc').innerText = `-$${descuentoValor.toFixed(2)} (${estado.descuentoPorcentaje}%)`;
-            } else {
-                descRow.classList.add('hidden');
-            }
-
-            document.getElementById('cart-tax').innerText = `$${iva.toFixed(2)}`;
-            document.getElementById('cart-total').innerText = `$${total.toFixed(2)}`;
-            
-            // Guardar el total en el estado para usarlo al cobrar
-            estado.totalActual = total; 
+        function aplicarDescuento() {
+            const val = parseFloat(document.getElementById('input-desc').value);
+            estado.descuentoPorcentaje = (!isNaN(val) && val > 0 && val <= 100) ? val : 0;
+            actualizarCarritoDOM();
         }
 
-        function aplicarDescuento() {
-            const inputVal = parseFloat(document.getElementById('input-desc').value);
-            if (!isNaN(inputVal) && inputVal > 0 && inputVal <= 100) {
-                estado.descuentoPorcentaje = inputVal;
-                mostrarNotificacion(`Descuento del ${inputVal}% aplicado`, 'info');
-            } else {
-                estado.descuentoPorcentaje = 0;
-                document.getElementById('input-desc').value = '';
-                if(estado.ordenActual.length > 0) mostrarNotificacion('Descuento eliminado', 'info');
-            }
+        function aplicarPropina(pct) {
+            estado.propinaPorcentaje = pct;
+            document.querySelectorAll('.tip-btn').forEach(btn => {
+                if(parseInt(btn.dataset.tip) === pct) btn.className = "tip-btn border border-indigo-500 bg-indigo-50 text-indigo-700 rounded py-1 text-xs font-bold";
+                else btn.className = "tip-btn border border-slate-200 bg-white text-slate-600 rounded py-1 text-xs font-medium";
+            });
             actualizarCarritoDOM();
         }
 
         function seleccionarPago(metodo) {
             estado.metodoPago = metodo;
-            const btnEf = document.getElementById('btn-pago-efectivo');
-            const btnTa = document.getElementById('btn-pago-tarjeta');
-            
-            if(metodo === 'efectivo') {
-                btnEf.className = "py-2 border-2 border-emerald-500 bg-emerald-50 text-emerald-700 rounded-lg text-sm font-semibold flex justify-center items-center gap-1 transition-colors";
-                btnTa.className = "py-2 border-2 border-slate-200 bg-white text-slate-500 hover:bg-slate-50 rounded-lg text-sm font-semibold flex justify-center items-center gap-1 transition-colors";
+            document.getElementById('btn-pago-efectivo').className = `py-2 border-2 rounded-lg text-sm font-semibold ${metodo==='efectivo'?'border-emerald-500 bg-emerald-50 text-emerald-700':'border-slate-200 bg-white text-slate-500'}`;
+            document.getElementById('btn-pago-tarjeta').className = `py-2 border-2 rounded-lg text-sm font-semibold ${metodo==='tarjeta'?'border-blue-500 bg-blue-50 text-blue-700':'border-slate-200 bg-white text-slate-500'}`;
+        }
+
+        function actualizarCarritoDOM() {
+            const container = document.getElementById('cart-items');
+            container.innerHTML = '';
+            let subtotal = 0, totalItems = 0;
+
+            if (estado.ordenActual.length === 0) {
+                container.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-slate-400 opacity-70"><span class="text-4xl mb-2">🍽️</span><p class="text-sm">Orden vacía</p></div>`;
+                document.getElementById('btn-pay').disabled = true;
             } else {
-                btnTa.className = "py-2 border-2 border-blue-500 bg-blue-50 text-blue-700 rounded-lg text-sm font-semibold flex justify-center items-center gap-1 transition-colors";
-                btnEf.className = "py-2 border-2 border-slate-200 bg-white text-slate-500 hover:bg-slate-50 rounded-lg text-sm font-semibold flex justify-center items-center gap-1 transition-colors";
+                document.getElementById('btn-pay').disabled = false;
+                estado.ordenActual.forEach(item => {
+                    subtotal += item.precio * item.cantidad;
+                    totalItems += item.cantidad;
+                    container.innerHTML += `
+                        <div class="flex justify-between items-center bg-white border border-slate-100 rounded-lg p-2 shadow-sm text-sm shrink-0">
+                            <div class="flex items-center gap-2 overflow-hidden">
+                                <span>${item.emoji}</span><div class="truncate"><p class="font-semibold truncate">${item.nombre}</p></div>
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <button onclick="restarDelCarrito(${item.id})" class="w-6 h-6 rounded bg-slate-100 font-bold">-</button>
+                                <span class="w-4 text-center font-bold">${item.cantidad}</span>
+                                <button onclick="agregarAlCarrito(${item.id})" class="w-6 h-6 rounded bg-slate-100 font-bold">+</button>
+                            </div>
+                        </div>
+                    `;
+                });
             }
+
+            let descuento = subtotal * (estado.descuentoPorcentaje / 100);
+            let subConDesc = subtotal - descuento;
+            let iva = subConDesc * estado.impuestoIVA;
+            let propina = subConDesc * (estado.propinaPorcentaje / 100);
+            let total = subConDesc + iva + propina;
+
+            document.getElementById('cart-count').innerText = `${totalItems} items`;
+            document.getElementById('cart-subtotal').innerText = `$${subtotal.toFixed(2)}`;
+            
+            const rowDesc = document.getElementById('cart-desc-row');
+            if(descuento > 0) { rowDesc.classList.remove('hidden'); document.getElementById('cart-desc').innerText = `-$${descuento.toFixed(2)}`; }
+            else rowDesc.classList.add('hidden');
+
+            const rowTip = document.getElementById('cart-tip-row');
+            if(propina > 0) { rowTip.classList.remove('hidden'); document.getElementById('cart-tip').innerText = `+$${propina.toFixed(2)}`; }
+            else rowTip.classList.add('hidden');
+
+            document.getElementById('cart-tax').innerText = `$${iva.toFixed(2)}`;
+            document.getElementById('cart-total').innerText = `$${total.toFixed(2)}`;
+            
+            estado.totalActual = total;
+            estado.propinaActual = propina;
+            estado.subtotalVentaActual = subConDesc + iva; // Sin propina
         }
 
         function limpiarCarrito() {
-            estado.ordenActual = [];
-            estado.descuentoPorcentaje = 0; // Reiniciar descuento
-            document.getElementById('input-desc').value = '';
+            estado.ordenActual = []; estado.descuentoPorcentaje = 0; estado.clienteActual = null;
+            aplicarPropina(0); document.getElementById('input-desc').value = '';
+            document.getElementById('select-cliente').value = '';
             actualizarCarritoDOM();
         }
 
         function procesarPago() {
             if (estado.ordenActual.length === 0) return;
 
-            // 1. Deducir inventario y sumar ventas históricas
-            estado.ordenActual.forEach(itemCarrito => {
-                const prodDb = estado.productos.find(p => p.id === itemCarrito.id);
-                if (prodDb) {
-                    prodDb.stock -= itemCarrito.cantidad;
-                    prodDb.ventasHistoricas += itemCarrito.cantidad;
-                }
+            // 1. Inventario y Puntos
+            estado.ordenActual.forEach(item => {
+                const p = estado.productos.find(x => x.id === item.id);
+                if(p) { p.stock -= item.cantidad; p.ventasHistoricas += item.cantidad; }
             });
+            
+            if (estado.clienteActual) {
+                const c = estado.clientes.find(x => x.id === estado.clienteActual);
+                if(c) c.puntos += Math.floor(estado.totalActual / 10);
+            }
 
-            // 2. Registrar la venta en el historial
-            const numArticulos = estado.ordenActual.reduce((acc, curr) => acc + curr.cantidad, 0);
             const idVenta = "TKT-" + Math.floor(Math.random() * 10000).toString().padStart(4, '0');
             
-            estado.historialVentas.unshift({ // Añade al inicio
-                id: idVenta,
-                fecha: new Date(),
-                articulos: numArticulos,
-                total: estado.totalActual,
-                metodo: estado.metodoPago, // Guardamos el método
-                detalle: [...estado.ordenActual] // copia del array
-            });
-
-            // 3. Actualizar Caja General
-            estado.caja += estado.totalActual;
-            document.getElementById('header-caja').innerText = `$${estado.caja.toFixed(2)}`;
-
-            // 4. Mostrar Recibo
-            mostrarRecibo(idVenta);
-
-            // 5. Limpiar y notificar
-            mostrarNotificacion(`Cobro exitoso: $${estado.totalActual.toFixed(2)}`, 'success');
-            limpiarCarrito();
+            // 2. Historial y Finanzas
+            estado.historialVentas.unshift({ id: idVenta, fecha: new Date(), articulos: estado.ordenActual.reduce((a,c)=>a+c.cantidad,0), total: estado.totalActual, metodo: estado.metodoPago, detalle: [...estado.ordenActual] });
             
-            // Re-renderizar menú por si algo se agotó
-            renderizarMenuPOS(); 
+            estado.ventasBrutas += estado.subtotalVentaActual;
+            estado.propinasTotales += estado.propinaActual;
+            estado.caja += estado.totalActual;
+            actualizarCaja();
+
+            // 3. Mandar a KDS (Cocina)
+            estado.ordenesCocina.push({ id: idVenta, items: [...estado.ordenActual], timestamp: Date.now() });
+
+            mostrarRecibo(idVenta);
+            mostrarNotificacion(`Cobrado: $${estado.totalActual.toFixed(2)}`, 'success');
+            limpiarCarrito();
+            renderizarMenuPOS();
         }
 
+        // --- 4. RECIBO ---
         function mostrarRecibo(idVenta) {
-            const recibo = estado.historialVentas.find(v => v.id === idVenta);
-            if (!recibo) return;
+            const v = estado.historialVentas.find(x => x.id === idVenta);
+            if(!v) return;
+            document.getElementById('recibo-total').innerText = `$${v.total.toFixed(2)}`;
+            document.getElementById('recibo-metodo').innerText = `PAGO EN ${v.metodo.toUpperCase()}`;
+            
+            let html = '';
+            v.detalle.forEach(i => html += `<div class="flex justify-between"><span>${i.cantidad}x ${i.nombre}</span><span>$${(i.precio*i.cantidad).toFixed(2)}</span></div>`);
+            document.getElementById('recibo-items').innerHTML = html;
+            document.getElementById('modal-recibo').classList.remove('hidden');
+        }
+        function cerrarRecibo() { document.getElementById('modal-recibo').classList.add('hidden'); }
 
-            document.getElementById('recibo-total').innerText = `$${recibo.total.toFixed(2)}`;
-            document.getElementById('recibo-metodo').innerText = `PAGO EN ${recibo.metodo.toUpperCase()}`;
-            
-            const contenedorItems = document.getElementById('recibo-items');
-            contenedorItems.innerHTML = '';
-            
-            recibo.detalle.forEach(item => {
-                const sub = item.precio * item.cantidad;
-                contenedorItems.innerHTML += `
-                    <div class="flex justify-between">
-                        <span>${item.cantidad}x ${item.nombre}</span>
-                        <span class="font-medium">$${sub.toFixed(2)}</span>
+        // --- 5. COCINA (KDS) ---
+        function renderizarCocina() {
+            const grid = document.getElementById('kds-grid');
+            grid.innerHTML = '';
+            if(estado.ordenesCocina.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-10">No hay órdenes pendientes.</div>';
+                return;
+            }
+
+            const ahora = Date.now();
+            estado.ordenesCocina.forEach((orden, index) => {
+                const minutos = Math.floor((ahora - orden.timestamp) / 60000);
+                let bgClass = "bg-slate-800 border-slate-700";
+                let textClass = "text-emerald-400";
+                if(minutos >= 5) { bgClass = "bg-red-900 border-red-500"; textClass = "text-red-300"; }
+                else if(minutos >= 3) { bgClass = "bg-yellow-900 border-yellow-500"; textClass = "text-yellow-300"; }
+
+                let itemsHtml = '';
+                orden.items.forEach(i => itemsHtml += `<div class="py-1 border-b border-slate-700/50 last:border-0"><span class="font-bold mr-2">${i.cantidad}x</span>${i.nombre}</div>`);
+
+                grid.innerHTML += `
+                    <div class="border-2 rounded-xl p-4 flex flex-col h-64 ${bgClass} shadow-lg relative overflow-hidden fade-in">
+                        <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-700">
+                            <span class="font-bold text-lg">${orden.id}</span>
+                            <span class="font-mono font-bold ${textClass}">${minutos} min</span>
+                        </div>
+                        <div class="flex-1 overflow-y-auto text-sm text-slate-200">${itemsHtml}</div>
+                        <button onclick="completarOrdenCocina(${index})" class="w-full mt-3 bg-white/10 hover:bg-white/20 text-white font-bold py-2 rounded transition-colors">✔️ Listo</button>
                     </div>
                 `;
             });
-
-            document.getElementById('modal-recibo').classList.remove('hidden');
         }
 
-        function cerrarRecibo() {
-            document.getElementById('modal-recibo').classList.add('hidden');
+        function completarOrdenCocina(index) {
+            estado.ordenesCocina.splice(index, 1);
+            renderizarCocina();
+            mostrarNotificacion('Orden completada', 'success');
         }
 
-        // --- LÓGICA DEL MÓDULO DASHBOARD ---
-        function renderizarDashboard() {
-            // 1. Tarjetas Superiores
-            const totalVentas = estado.historialVentas.length;
-            document.getElementById('dash-ingresos').innerText = `$${estado.caja.toFixed(2)}`;
-            document.getElementById('dash-ordenes').innerText = totalVentas;
-            
-            const promedio = totalVentas > 0 ? (estado.caja / totalVentas) : 0;
-            document.getElementById('dash-promedio').innerText = `$${promedio.toFixed(2)}`;
+        // Actualizar KDS cada 10 segundos
+        setInterval(() => { if(estado.vistaActual === 'kitchen') renderizarCocina(); }, 10000);
 
-            // 2. Gráfico "Top Productos"
-            const topContenedor = document.getElementById('dash-top-products');
-            topContenedor.innerHTML = '';
-            
-            // Clonar y ordenar por ventas (mayor a menor)
-            const productosOrdenados = [...estado.productos]
-                .filter(p => p.ventasHistoricas > 0)
-                .sort((a, b) => b.ventasHistoricas - a.ventasHistoricas)
-                .slice(0, 5); // Tomar el top 5
-
-            if (productosOrdenados.length === 0) {
-                topContenedor.innerHTML = '<div class="text-center text-slate-400 py-4 text-sm">No hay ventas registradas aún.</div>';
-            } else {
-                const maxVentas = productosOrdenados[0].ventasHistoricas; // Para calcular porcentajes
-                
-                productosOrdenados.forEach(prod => {
-                    const porcentaje = (prod.ventasHistoricas / maxVentas) * 100;
-                    const div = document.createElement('div');
-                    div.innerHTML = `
-                        <div class="flex justify-between text-sm mb-1">
-                            <span class="font-medium text-slate-700">${prod.emoji} ${prod.nombre}</span>
-                            <span class="text-slate-500">${prod.ventasHistoricas} uds</span>
-                        </div>
-                        <div class="w-full bg-slate-100 rounded-full h-2">
-                            <div class="bg-blue-500 h-2 rounded-full progress-bar" style="width: 0%"></div>
-                        </div>
-                    `;
-                    topContenedor.appendChild(div);
-                    
-                    // Animación de la barra
-                    setTimeout(() => {
-                        div.querySelector('.progress-bar').style.width = `${porcentaje}%`;
-                    }, 50);
-                });
-            }
-
-            // 3. Tabla de Últimas Transacciones
-            const historyTable = document.getElementById('dash-history');
-            historyTable.innerHTML = '';
-            
-            if (estado.historialVentas.length === 0) {
-                historyTable.innerHTML = '<tr><td colspan="3" class="text-center py-8 text-slate-400">Sin transacciones recientes.</td></tr>';
-            } else {
-                // Mostrar solo las últimas 10
-                estado.historialVentas.slice(0, 10).forEach(venta => {
-                    const tr = document.createElement('tr');
-                    tr.className = "hover:bg-slate-50 border-b border-slate-100 last:border-0";
-                    
-                    // Formatear hora
-                    const hora = venta.fecha.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                    // Icono según método de pago
-                    const iconoPago = venta.metodo === 'efectivo' ? '💵' : '💳';
-
-                    tr.innerHTML = `
-                        <td class="px-4 py-3 font-medium text-blue-600">
-                            ${venta.id}
-                            <div class="text-[10px] text-slate-400 font-normal">${hora}</div>
-                        </td>
-                        <td class="px-4 py-3 text-slate-600">${venta.articulos} items</td>
-                        <td class="px-4 py-3 text-right font-bold text-emerald-600">
-                            ${iconoPago} $${venta.total.toFixed(2)}
-                        </td>
-                    `;
-                    historyTable.appendChild(tr);
-                });
-            }
-        }
-
-        // --- LÓGICA DEL MÓDULO INVENTARIO ---
+        // --- 6. INVENTARIO Y CREACIÓN ---
         function renderizarInventario() {
             const tbody = document.getElementById('inventory-table');
             tbody.innerHTML = '';
-
-            estado.productos.forEach(prod => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50 transition-colors";
-                
-                // Color para alertar stock bajo
-                let stockClass = "text-slate-700 font-semibold";
-                if (prod.stock <= 5) stockClass = "text-red-600 font-bold";
-                else if (prod.stock <= 15) stockClass = "text-amber-500 font-semibold";
-
-                tr.innerHTML = `
-                    <td class="px-6 py-4 flex items-center gap-2">
-                        <span class="text-xl">${prod.emoji}</span>
-                        <span class="font-medium text-slate-800">${prod.nombre}</span>
-                    </td>
-                    <td class="px-6 py-4">
-                        <span class="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-                            ${prod.categoria}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 text-right text-slate-500">$${prod.precio.toFixed(2)}</td>
-                    <td class="px-6 py-4 text-center">
-                        <span class="${stockClass}">${prod.stock}</span>
-                    </td>
-                    <td class="px-6 py-4 text-center">
-                        <button onclick="surtirProducto(${prod.id}, 10)" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-medium py-1.5 px-3 rounded transition-colors border border-indigo-200">
-                            +10 Stock
-                        </button>
-                    </td>
+            estado.productos.forEach(p => {
+                let sClass = p.stock <= 5 ? "text-red-600 font-bold" : (p.stock <= 15 ? "text-amber-500 font-semibold" : "text-slate-700");
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 border-b border-slate-100">
+                        <td class="px-6 py-3 flex gap-2 items-center"><span class="text-xl">${p.emoji}</span>${p.nombre}</td>
+                        <td class="px-6 py-3 text-xs text-slate-500">${p.categoria}</td>
+                        <td class="px-6 py-3 text-right">$${p.precio.toFixed(2)}</td>
+                        <td class="px-6 py-3 text-center"><span class="${sClass}">${p.stock}</span></td>
+                        <td class="px-6 py-3 text-center"><button onclick="surtirProducto(${p.id}, 10)" class="text-xs bg-indigo-50 text-indigo-600 px-3 py-1 rounded">Surtir +10</button></td>
+                    </tr>
                 `;
-                tbody.appendChild(tr);
             });
         }
 
-        function surtirProducto(id, cantidad) {
-            const prod = estado.productos.find(p => p.id === id);
-            if(prod) {
-                prod.stock += cantidad;
-                mostrarNotificacion(`Inventario de ${prod.nombre} actualizado`, 'info');
-                renderizarInventario(); // Refrescar vista
-                
-                // Refrescar menú POS por si el producto estaba agotado
-                if (estado.vistaActual === 'pos') renderizarMenuPOS(); 
+        function surtirProducto(id, cant) {
+            const p = estado.productos.find(x => x.id === id);
+            if(p) {
+                let costo = (p.precio * 0.4) * cant; // Costo es 40%
+                p.stock += cant;
+                estado.caja -= costo;
+                estado.costoInventario += costo;
+                actualizarCaja();
+                mostrarNotificacion(`Surtido: -$${costo.toFixed(2)}`, 'info');
+                renderizarInventario();
             }
         }
 
         function surtirTodo() {
-            estado.productos.forEach(p => p.stock += 10);
-            mostrarNotificacion('Todos los productos han recibido +10', 'success');
+            let costo = 0;
+            estado.productos.forEach(p => { p.stock += 10; costo += (p.precio * 0.4) * 10; });
+            estado.caja -= costo;
+            estado.costoInventario += costo;
+            actualizarCaja();
+            mostrarNotificacion(`Surtido Global: -$${costo.toFixed(2)}`, 'info');
             renderizarInventario();
-            if (estado.vistaActual === 'pos') renderizarMenuPOS();
         }
 
-        // --- UTILIDADES Y ARRANQUE ---
-        function mostrarNotificacion(mensaje, tipo = 'success') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            
-            // Estilos según el tipo
-            let bgClass = tipo === 'success' ? 'bg-emerald-600' : (tipo === 'error' ? 'bg-red-500' : 'bg-blue-500');
-            let icon = tipo === 'success' ? '✅' : (tipo === 'error' ? '⚠️' : 'ℹ️');
+        function crearProducto() {
+            const nombre = document.getElementById('nuevo-prod-nombre').value;
+            const precio = parseFloat(document.getElementById('nuevo-prod-precio').value);
+            const cat = document.getElementById('nuevo-prod-cat').value;
+            const emoji = document.getElementById('nuevo-prod-emoji').value || '🍽️';
 
-            toast.className = `${bgClass} text-white px-4 py-3 rounded-lg shadow-lg font-medium flex items-center gap-3 toast-enter pointer-events-auto`;
-            toast.innerHTML = `<span>${icon}</span> <p class="text-sm">${mensaje}</p>`;
+            if(!nombre || isNaN(precio)) { mostrarNotificacion('Datos inválidos', 'error'); return; }
             
-            container.appendChild(toast);
-            
-            // Animar entrada
-            requestAnimationFrame(() => {
-                toast.classList.add('toast-enter-active');
+            estado.productos.push({
+                id: estado.productos.length + 1, nombre, precio, categoria: cat, emoji, stock: 0, ventasHistoricas: 0
             });
             
-            // Remover después de 3s
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transform = 'translateX(100%)';
-                setTimeout(() => toast.remove(), 400);
-            }, 3000);
+            document.getElementById('nuevo-prod-nombre').value = '';
+            document.getElementById('nuevo-prod-precio').value = '';
+            mostrarNotificacion('Producto creado. Recuerda surtirlo.', 'success');
+            renderizarInventario();
         }
 
-        // Inicializar aplicación al cargar
-        window.onload = () => {
-            cambiarVista('pos'); // Cargar la vista principal por defecto
-        };
+        // --- 7. FINANZAS Y REPORTES ---
+        function renderizarFinanzas() {
+            document.getElementById('fin-ventas').innerText = `$${estado.ventasBrutas.toFixed(2)}`;
+            document.getElementById('fin-propinas').innerText = `+$${estado.propinasTotales.toFixed(2)}`;
+            document.getElementById('fin-costo').innerText = `-$${estado.costoInventario.toFixed(2)}`;
+            document.getElementById('fin-gastos').innerText = `-$${estado.gastosOperativos.toFixed(2)}`;
+            
+            let neta = estado.ventasBrutas - estado.costoInventario - estado.gastosOperativos;
+            let elNeta = document.getElementById('fin-neta');
+            elNeta.innerText = `$${neta.toFixed(2)}`;
+            elNeta.className = neta >= 0 ? 'text-emerald-400' : 'text-red-400';
+            
+            document.getElementById('fin-caja').innerText = `$${estado.caja.toFixed(2)}`;
+
+            const ul = document.getElementById('lista-gastos');
+            ul.innerHTML = '';
+            estado.historialGastos.forEach(g => {
+                ul.innerHTML += `<li class="flex justify-between border-b border-slate-100 pb-1"><span>${g.concepto}</span><span class="text-red-500">-$${g.monto.toFixed(2)}</span></li>`;
+            });
+        }
+
+        function registrarGasto() {
+            const concepto = document.getElementById('gasto-concepto').value;
+            const monto = parseFloat(document.getElementById('gasto-monto').value);
+            if(!concepto || isNaN(monto) || monto <= 0) return;
+
+            estado.gastosOperativos += monto;
+            estado.caja -= monto;
+            estado.historialGastos.push({ concepto, monto });
+            actualizarCaja();
+            renderizarFinanzas();
+            document.getElementById('gasto-concepto').value = '';
+            document.getElementById('gasto-monto').value = '';
+            mostrarNotificacion('Gasto registrado', 'info');
+        }
+
+        function descargarReporte() {
+            let neta = estado.ventasBrutas - estado.costoInventario - estado.gastosOperativos;
+            let texto = `--- REPORTE Z: CAFE CODIGO ---\nFecha: ${new Date().toLocaleString()}\n\n`;
+            texto += `INGRESOS\nVentas Brutas: $${estado.ventasBrutas.toFixed(2)}\nPropinas: $${estado.propinasTotales.toFixed(2)}\n\n`;
+            texto += `EGRESOS\nCosto Inventario: $${estado.costoInventario.toFixed(2)}\nGastos Operativos: $${estado.gastosOperativos.toFixed(2)}\n\n`;
+            texto += `-----------------------------\nUTILIDAD NETA: $${neta.toFixed(2)}\nDINERO EN CAJA: $${estado.caja.toFixed(2)}\n-----------------------------`;
+            
+            const blob = new Blob([texto], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Corte_De_Caja.txt';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        // --- 8. DASHBOARD & CRM BÁSICO ---
+        function renderizarDashboard() {
+            document.getElementById('dash-ingresos').innerText = `$${estado.ventasBrutas.toFixed(2)}`;
+            document.getElementById('dash-ordenes').innerText = estado.historialVentas.length;
+            document.getElementById('dash-promedio').innerText = `$${(estado.historialVentas.length ? estado.ventasBrutas/estado.historialVentas.length : 0).toFixed(2)}`;
+            
+            const table = document.getElementById('dash-history');
+            table.innerHTML = '';
+            estado.historialVentas.slice(0, 10).forEach(v => {
+                table.innerHTML += `<tr class="border-b border-slate-100"><td class="py-2 text-blue-600 font-medium">${v.id}</td><td class="py-2 text-slate-500">${v.articulos} items</td><td class="py-2 text-right font-bold text-emerald-600">$${v.total.toFixed(2)}</td></tr>`;
+            });
+        }
+
+        function asignarCliente(id) { estado.clienteActual = id ? parseInt(id) : null; }
+        function actualizarSelectClientes() {
+            const sel = document.getElementById('select-cliente');
+            sel.innerHTML = '<option value="">👤 Público en General</option>';
+            estado.clientes.forEach(c => sel.innerHTML += `<option value="${c.id}">${c.nombre} (${c.puntos} pts)</option>`);
+        }
+        function renderizarClientes() {
+            const tb = document.getElementById('customers-table');
+            tb.innerHTML = '';
+            estado.clientes.forEach(c => tb.innerHTML += `<tr class="border-b border-slate-100"><td class="px-6 py-3 font-medium">${c.nombre}</td><td class="px-6 py-3 text-slate-500">${c.telefono}</td><td class="px-6 py-3 text-center text-indigo-600 font-bold">${c.puntos} pts</td></tr>`);
+        }
+        function agregarCliente() {
+            const nombre = document.getElementById('nuevo-cliente-nombre').value;
+            const telefono = document.getElementById('nuevo-cliente-tel').value;
+            if(nombre) { estado.clientes.push({id: Date.now(), nombre, telefono, puntos: 0}); renderizarClientes(); mostrarNotificacion('Cliente guardado', 'success'); }
+        }
+
+        function mostrarNotificacion(msg, tipo='success') {
+            const c = document.getElementById('toast-container');
+            const bg = tipo === 'error' ? 'bg-red-500' : (tipo === 'info' ? 'bg-blue-500' : 'bg-emerald-600');
+            const div = document.createElement('div');
+            div.className = `${bg} text-white px-4 py-3 rounded-lg shadow-lg text-sm font-medium toast-enter`;
+            div.innerText = msg;
+            c.appendChild(div);
+            requestAnimationFrame(() => div.classList.add('toast-enter-active'));
+            setTimeout(() => { div.style.opacity=0; setTimeout(()=>div.remove(),400); }, 3000);
+        }
+
+        window.onload = () => { cambiarVista('pos'); };
     </script>
 </body>
 </html>
